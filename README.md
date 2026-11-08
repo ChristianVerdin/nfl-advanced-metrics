@@ -19,6 +19,8 @@ ggplot2 4 APIs.
 | B5 | D'Andre Swift gets the carries; Kyle Monangai does more with them |
 | B6 | Every 2026 Bears game, with the starting quarterback |
 | B7 | His sack rate: 9.9% as a rookie, 3.8% in 2025, 7.0% this season |
+| B8 | Third downs by head coach: 31st in 2024, 8th in Ben Johnson's first season, 9th so far in 2026 |
+| B9 | The defense: 1st in third-down conversions allowed, 28th in yards per play allowed |
 
 ![No current starter is both more efficient and more accurate than Caleb Williams](out/B2_caleb_vs_starting_qbs.png)
 
@@ -32,6 +34,17 @@ ggplot2 4 APIs.
 | P3 | Weeks 1-3 explain about 18% of how a team plays the rest of the season |
 
 ![Touchdown luck doesn't carry over; touchdown opportunity does](out/P2_touchdown_regression.png)
+
+## How teams have trended in 2026
+
+| # | Finding |
+|---|---|
+| T1 | First four weeks vs the next four: the 8 biggest risers (Packers +0.38 net EPA per play) and fallers (Raiders -0.34) |
+| T2 | Today's best 8 and worst 8, and how each got there on offense and defense |
+| T3 | Every team's season game by game, with a three-game rolling line |
+| T4 | Rank in three stretches of the season for the biggest climbers (Giants 29th to 5th) and fallers (49ers 1st to 22nd) |
+
+![Rank movement in three stretches of the season](out/T4_rank_bump_chart.png)
 
 ## The 2026 season
 
@@ -72,10 +85,13 @@ and 16 TEs, all Bears skill players, and the touchdown-outlier players. `assets/
 ## Run it
 
 ```bash
+scripts/build_all.sh             # everything: data pull, history, headshots, charts, table screenshot
+scripts/build_all.sh --charts    # charts only, from the saved data/ snapshot
+
 # one-time: an isolated conda env (the stack below), then CRAN for the nflverse packages
 conda create -n nfl_viz -c conda-forge r-base=4.5 r-ggplot2 r-dplyr r-tidyr r-magick r-gt r-gtextras r-ggrepel \
-  r-ggtext r-patchwork r-ggridges r-ggfx r-s7 r-ragg r-systemfonts r-svglite r-scales compilers make pkg-config
-Rscript -e 'install.packages(c("nflreadr", "ggpath", "nflplotR"), repos = "https://cloud.r-project.org")'
+  r-ggtext r-geomtextpath r-patchwork r-ggridges r-ggfx r-s7 r-ragg r-systemfonts r-svglite r-scales compilers make pkg-config
+Rscript -e 'install.packages(c("nflreadr", "ggpath", "nflplotR", "cropcircles"), repos = "https://cloud.r-project.org")'
 
 Rscript R/01_data.R                  # pull one snapshot of every table into data/ (asserts every game is final)
 Rscript R/01b_history.R              # 2018-2025 play-by-play, expected-touchdown data, 2026 snap counts
@@ -85,7 +101,7 @@ python scripts/shoot.py "$PWD/out/14_qb_efficiency_board.html" "$PWD/out/14_qb_e
 ```
 
 Built and checked on 2026-11-08 with R 4.5.3, ggplot2 4.0.3, nflplotR 1.7.1, nflreadr 1.5.1, ggpath 1.1.2, gt 1.4.0,
-gtExtras 0.6.2, ggrepel 0.9.8, ggridges 0.5.7, ggfx 1.0.3, ragg 1.5.2. Every installed package matched CRAN's latest that
+gtExtras 0.6.2, ggtext 0.2.0, cropcircles 0.2.4, geomtextpath 0.2.0, ggrepel 0.9.8, ggridges 0.5.7, ggfx 1.0.3, ragg 1.5.2. Every installed package matched CRAN's latest that
 day. R 4.6 was skipped because conda-forge had not yet built ggplot2 4 for it. Fonts: Roboto (SIL OFL 1.1, `fonts/`),
 registered locally.
 
