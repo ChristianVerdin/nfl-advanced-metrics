@@ -38,10 +38,7 @@ chart_kickoff_rule <- function() {
     labs(
       title = paste0("The new kickoff gave every offense about ", round(after$start - mean(before$start)),
                      " free yards: drives now start at the ", round(after$start), ", not the ", round(mean(before$start))),
-      subtitle = paste0("Drives that began with a kickoff, regular season 2018-", SEASON, " (", comma(sum(s$n)), " drives). ",
-                        "Dashed lines: the 2024 kickoff redesign (touchback to the 30) and the 2025 move of the touchback to the 35.\n",
-                        "From 2018-2023, ", pct(mean(before$cross)), " of these drives crossed midfield; in ", SEASON, ", ",
-                        pct(after$cross), ". *", SEASON, " is Weeks ", min(WEEKS), "-", max(WEEKS), "."),
+      subtitle = paste0("Drives that began with a kickoff, 2018-", SEASON, ". Dashed lines: the 2024 and 2025 kickoff rule changes. *", SEASON, " = Weeks ", min(WEEKS), "-", max(WEEKS)),
       x = NULL, y = NULL, caption = caption(span = paste0("2018-", SEASON), credit = NULL)
     ) +
     theme_nfl() + theme(panel.grid.major.x = element_blank(), strip.text = element_text(size = 12, hjust = 0))
@@ -76,15 +73,9 @@ chart_td_regression <- function() {
     scale_x_continuous(labels = function(v) number(v, 0.1)) + scale_y_continuous(labels = function(v) number(v, 0.1)) +
     labs(
       title = "Touchdown luck doesn't carry over. Touchdown opportunity does.",
-      subtitle = paste0("Running backs, receivers and tight ends, 2018-2025: Weeks 1-8 against Weeks 9-18 of the same season (",
-                        comma(nrow(d)), " player-seasons, 5+ games in each half). Scoring more touchdowns than your opportunities ",
-                        "predict tells you almost nothing about the second half (r = ", number(r_over, 0.01), "); the opportunities ",
-                        "themselves do (r = ", number(r_xtd, 0.01), "). Raw first-half touchdowns predict about as well (r = ",
-                        number(r_td, 0.01), ") only because nearly all of their signal is the opportunity inside them."),
+      subtitle = paste0("Running backs, receivers and tight ends, 2018-2025: Weeks 1-8 vs Weeks 9-18 of the same season (", comma(nrow(d)), " player-seasons)"),
       x = "Weeks 1-8", y = "Weeks 9-18",
-      caption = caption("Expected touchdowns: nflverse ff_opportunity model, from where and how each player was targeted or handed the ball.",
-                        span = "2018-2025", credit = NULL)
-    ) +
+      caption = caption("Expected touchdowns: nflverse ff_opportunity model", span = "2018-2025", credit = NULL)) +
     theme_nfl() + theme(strip.text = element_text(size = 12, hjust = 0, lineheight = 1.1))
   save_chart(g, "P2_touchdown_regression", w = 13, h = 7)
 }
@@ -114,11 +105,9 @@ chart_td_outliers_2026 <- function() {
     labs(
       title = paste0("Touchdowns are running ahead of opportunity for ", top$name, " (", signed(top$diff, 0.1), ") and behind it for ",
                      bot$name, " (", signed(bot$diff, 0.1), ")"),
-      subtitle = paste0("2026 Weeks 1-8: touchdowns minus expected touchdowns, the 8 biggest gaps each way among players with 2+ expected. ",
-                        "Since 2018 the gap has carried almost nothing into the second half (r = 0.04), so the second half should look more like the expected column."),
+      subtitle = "Touchdowns minus expected touchdowns, players with 2+ expected. Since 2018, gaps like these have faded",
       x = "Touchdowns above (or below) expected", y = NULL,
-      caption = caption("Expected touchdowns: nflverse ff_opportunity model.", credit = HEADS)
-    ) +
+      caption = caption("Expected touchdowns: nflverse ff_opportunity model", credit = HEADS)) +
     theme_nfl() + theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
   save_chart(g, "P2b_touchdown_outliers_2026", w = 13, h = 8.2)
 }
@@ -141,16 +130,15 @@ chart_early_weeks <- function() {
     geom_point(data = d |> filter(season != last_s), color = "#9aa6b2", alpha = 0.45, size = 1.8) +
     geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "#d9822b", linewidth = 1.2) +
     geom_nfl_logos(data = hl, aes(team_abbr = team), width = 0.04, alpha = 0.95) +
+    annotate("label", x = 0.2, y = fit[1] + fit[2] * 0.2 - 0.09, label = paste0("a +0.20 start projects to ", signed(fit[1] + fit[2] * 0.2), " the rest of the way"),
+             family = "RobotoNFL", fontface = "bold", size = 3.4, color = "#b5651d", fill = "white", hjust = 0) +
     annotate("text", x = max(d$rest) * 1.02, y = max(d$rest) * 1.02, label = "dotted: if Weeks 1-3 told the whole story", hjust = 1.05,
              vjust = 0, family = "RobotoNFL", size = 3.2, color = MUTED) +
     scale_x_continuous(labels = function(v) signed(v, 0.01)) + scale_y_continuous(labels = function(v) signed(v, 0.01)) +
     coord_cartesian(ylim = range(d$rest) * 1.08) +
     labs(
       title = paste0("Three weeks of football explain only ", pct(r^2), " of how a team plays the rest of the season"),
-      subtitle = paste0("Net EPA per play (offense minus defense) in Weeks 1-3 vs the rest of the season, 2018-", last_s, " (",
-                        nrow(d), " team-seasons; logos are ", last_s, "). The correlation is r = ", number(r, 0.01),
-                        ", and the fitted line is ", number(fit[2], 0.01), " times the early number: a team that starts +0.20 is expected to play about ",
-                        signed(fit[1] + fit[2] * 0.2, 0.01), " the rest of the way."),
+      subtitle = paste0("Net EPA per play, Weeks 1-3 vs Weeks 4-18, 2018-", last_s, " (", nrow(d), " team-seasons; logos = ", last_s, "), r = ", number(r, 0.01)),
       x = "Net EPA per play, Weeks 1-3", y = "Net EPA per play, Weeks 4-18",
       caption = caption(span = paste0("2018-", last_s))
     ) +

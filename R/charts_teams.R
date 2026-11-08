@@ -34,12 +34,10 @@ chart_epa_landscape <- function() {
                     expand = expansion(mult = 0.02)) +
     labs(
       title = "Who's good on both sides of the ball?",
-      subtitle = paste0("Expected points added (EPA) per play on offense and allowed on defense, passes and runs. ",
-                        "Up and to the right is good.\nDashed lines mark the league average."),
+      subtitle = "EPA per play on offense and allowed on defense, passes and runs. Up and to the right is good.",
       x = "Offense: EPA per play (higher is better)",
       y = "Defense: EPA per play allowed (lower is better)",
-      caption = caption("EPA measures how much each play changes a team's expected points, from the nflfastR model.")
-    ) +
+      caption = caption("EPA = expected points added (nflfastR)")) +
     theme_nfl()
   save_chart(g, "01_team_epa_landscape")
 }
@@ -55,8 +53,7 @@ chart_team_tiers <- function() {
   g <- nfl_team_tiers(
     d |> transmute(tier_no, team_abbr = team, tier_rank),
     title = "2026 team tiers after eight weeks",
-    subtitle = paste0("Net EPA per play (offense minus defense allowed), grouped with k-means. ",
-                      "Best first within each tier."),
+    subtitle = "Net EPA per play (offense minus defense allowed), grouped with k-means",
     caption = caption(),
     tier_desc = c("1" = "Top tier", "2" = "Above average", "3" = "Average", "4" = "Below average", "5" = "Bottom tier"),
     width = 0.072
@@ -87,11 +84,9 @@ chart_proe <- function() {
                        breaks = pretty_breaks(8), expand = expansion(mult = 0.1)) +
     labs(
       title = "Who throws more than the situation calls for?",
-      subtitle = paste0("Early-down pass rate over expected: how often a team drops back to pass compared with the nflfastR ",
-                        "expected-pass model.\n1st and 2nd down, win probability 20-80%, outside the last two minutes of each half."),
+      subtitle = "How often teams drop back on 1st and 2nd down vs what the situation predicts, close games only",
       x = "Dropback rate over expected (percentage points)", y = NULL,
-      caption = caption("Expected-pass model: nflfastR xpass, from down, distance, field position, score, time and win probability.")
-    ) +
+      caption = caption("Expected pass rate: nflfastR xpass")) +
     theme_nfl() +
     theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
   save_chart(g, "03_early_down_proe", w = 12, h = 8.5)

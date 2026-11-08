@@ -38,13 +38,9 @@ chart_caleb_leap <- function() {
     labs(
       title = paste0("Caleb Williams went from ", ordinal(r$rank[1]), " to ", ordinal(r$rank[2]), " to ",
                      ordinal(r$rank[3]), " in EPA per dropback"),
-      subtitle = paste0("Each gray dot is a qualifying quarterback (200+ dropbacks in 2024 and 2025, 150+ through Week 8 of 2026).\n",
-                        "His completion % over expected went ", signed(c26$value[1], 0.1), "%, ", signed(c26$value[2], 0.1),
-                        "%, ", signed(c26$value[3], 0.1), "%.\nThe 2026 sample is ", r$db[3],
-                        " dropbacks in 5 starts; he missed Weeks 3-5."),
+      subtitle = paste0("Gray dots: every qualifying QB each season. The 2026 sample is ", r$db[3], " dropbacks in 5 starts"),
       x = NULL, y = NULL,
-      caption = caption("EPA and CPOE from the nflfastR models. Regular season only.", span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)
-    ) +
+      caption = caption(span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)) +
     theme_nfl() + theme(strip.text = element_text(size = 13, hjust = 0), panel.grid.major.x = element_blank())
   save_chart(g, "B1_caleb_williams_leap", w = 13, h = 7.6)
 }
@@ -52,13 +48,14 @@ chart_caleb_leap <- function() {
 starter_ids <- function() read.csv(file.path(ROOT, "assets", "headshots", "manifest.csv")) |>
   filter(group == "Starting QBs") |> pull(gsis_id)
 
-chart_caleb_vs_starters <- function() {
+chart_caleb_vs_starters <- function(n_heads = 9) {
   ids <- starter_ids()
   all_st <- qb_season(data_rds("pbp"), 1) |> filter(id %in% ids)
-  left_out <- all_st |> filter(db < 100) |> left_join(data_rds("players") |> select(id = gsis_id, name), by = "id")
   d <- all_st |> filter(db >= 100) |> left_join(sprites(), by = c("id" = "gsis_id")) |>
     mutate(me = id == CALEB, rank_epa = rank(-epa, ties.method = "min"), rank_cpoe = rank(-cpoe, ties.method = "min"))
   cw <- d |> filter(me)
+  heads <- d |> filter(rank_epa <= n_heads + 1) |> mutate(w = ifelse(me, 0.1, 0.06))
+  heads <- cbind(heads, spread_xy(heads$cpoe, heads$epa, heads$w, range(d$cpoe), range(d$epa), aspect = 13 / 8.4))
   both <- d |> filter(!me, epa > cw$epa, cpoe > cw$cpoe)
   pl <- data_rds("players")
   better <- pl$name[match(both$id, pl$gsis_id)]
@@ -67,20 +64,21 @@ chart_caleb_vs_starters <- function() {
            " both more efficient and more accurate than Caleb Williams")
   g <- ggplot(d, aes(cpoe, epa)) +
     geom_mean_lines(aes(x0 = cpoe, y0 = epa), color = "black", linetype = "dashed", alpha = 0.4, linewidth = 0.5) +
-    annotate("rect", xmin = cw$cpoe, xmax = Inf, ymin = cw$epa, ymax = Inf, fill = bears_col()[["orange"]], alpha = 0.07) +
-    ggpath::geom_from_path(data = d |> filter(!me), aes(path = sprite), width = 0.056, alpha = 0.92) +
-    ggpath::geom_from_path(data = cw, aes(path = sprite), width = 0.1) +
+    annotate("rect", xmin = cw$cpoe, xmax = Inf, ymin = cw$epa, ymax = Inf, fill = ORANGE, alpha = 0.07) +
+    annotate("text", x = Inf, y = Inf, label = "better than Caleb on both", hjust = 1.05, vjust = 1.6, family = "RobotoNFL",
+             fontface = "bold", size = 3.5, color = ORANGE) +
+    geom_point(data = d |> filter(!me, rank_epa > n_heads), color = GRAY, size = 3, alpha = 0.55) +
+    geom_segment(data = heads, aes(x = cpoe, y = epa, xend = xs, yend = ys), color = "#9a9a9a", linewidth = 0.4) +
+    geom_point(data = heads, aes(cpoe, epa), color = INK, size = 1.3) +
+    ggpath::geom_from_path(data = heads |> filter(!me), aes(x = xs, y = ys, path = sprite), width = 0.06) +
+    ggpath::geom_from_path(data = heads |> filter(me), aes(x = xs, y = ys, path = sprite), width = 0.1) +
     scale_x_continuous(labels = function(v) paste0(signed(v, 1), "%"), breaks = pretty_breaks(7), expand = expansion(mult = 0.08)) +
     scale_y_continuous(labels = function(v) signed(v), breaks = pretty_breaks(7), expand = expansion(mult = 0.12)) +
     labs(
       title = title,
-      subtitle = paste0("Quarterbacks who started their team's latest game, all their 2026 dropbacks (100+; ",
-                        if (nrow(left_out)) paste0("left out: ", paste0(left_out$name, " ", left_out$db, collapse = ", "), ")") else "none left out)",
-                        ". The shaded corner would beat Caleb on both.\n",
-                        "Caleb: ", signed(cw$epa), " EPA per dropback (", ordinal(cw$rank_epa), " of ", nrow(d), "), ",
-                        signed(cw$cpoe, 0.1), "% CPOE (", ordinal(cw$rank_cpoe), ")."),
-      x = "Completion % over expected (CPOE)", y = "EPA per dropback",
-      caption = caption(credit = HEADS)
+      subtitle = paste0("Starting QBs with 100+ dropbacks: ", kw("Caleb", ORANGE), " (", ordinal(cw$rank_epa), " in EPA, ",
+                        ordinal(cw$rank_cpoe), " in CPOE), headshots for the next ", n_heads, ", gray dots for the rest"),
+      x = "Completion % over expected (CPOE)", y = "EPA per dropback", caption = caption(credit = HEADS)
     ) +
     theme_nfl()
   save_chart(g, "B2_caleb_vs_starting_qbs", w = 13, h = 8.4)
@@ -105,7 +103,8 @@ chart_caleb_targets <- function() {
   top <- d |> slice_head(n = 3)
   eff <- d |> filter(tgt >= 10) |> slice_max(epa, n = 1)
   g <- ggplot(d, aes(share, gsis_id)) +
-    geom_col(fill = bears_col()[["navy"]], width = 0.62) +
+    geom_col(aes(fill = gsis_id == eff$gsis_id), width = 0.62) +
+    scale_fill_manual(values = c(`TRUE` = ORANGE, `FALSE` = NAVY), guide = "none") +
     geom_text(aes(x = share + 0.006, label = paste0(name, "   ", pct(share), " of targets  ·  ", rec, "/", tgt, " for ", yds,
                                                     " yds  ·  ", signed(epa), " EPA per target")),
               hjust = 0, family = "RobotoNFL", fontface = "bold", size = 3.5, color = INK) +
@@ -114,9 +113,7 @@ chart_caleb_targets <- function() {
                        breaks = seq(0, 0.3, 0.05), expand = c(0, 0)) +
     labs(
       title = paste0("Caleb Williams keeps everyone involved, and ", eff$name, " makes the most of it"),
-      subtitle = paste0("Every Bear with 4+ targets from Caleb in his ", length(gms), " starts. No one draws more than ", pct(max(d$share)),
-                        " of his targets; ", last_name(eff$name), " turns his into ", signed(eff$epa),
-                        " EPA per target (", eff$rec, "/", eff$tgt, " for ", eff$yds, " yards)."),
+      subtitle = paste0("Every Bear with 4+ targets from Caleb in his ", length(gms), " starts"),
       x = "Share of Caleb's targets", y = NULL, caption = caption(credit = HEADS)
     ) +
     theme_nfl() + theme(axis.text.y = element_blank(), panel.grid.major.y = element_blank())
@@ -144,17 +141,14 @@ chart_caleb_depth <- function() {
                position = position_nudge(x = -0.19), family = "RobotoNFL", fontface = "bold", size = 3.2, color = bears_col()[["orange"]],
                lineheight = 0.9) +
     ggpath::geom_from_path(data = s, aes(x = 4.25, y = 0.9, path = sprite), width = 0.11, inherit.aes = FALSE) +
-    scale_fill_manual(values = c("Caleb Williams" = bears_col()[["orange"]], "League" = "#b9c2cc"), name = NULL) +
+    scale_fill_manual(values = c("Caleb Williams" = ORANGE, "League" = GRAY), name = NULL) +
     scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, 1.05), expand = c(0, 0)) +
     labs(
       title = paste0("Caleb Williams beats expected completion ", if (all(cw$cpoe > 0)) "at every depth" else "at most depths",
                      ", most of all ", tolower(sub(" \\(.*", "", best$depth)), " (", signed(best$cpoe, 0.1), "%)"),
-      subtitle = paste0("Completion rate by depth of throw, Caleb vs the league, 2026 Weeks 1-8 (attempts in brackets).\n",
-                        "On throws of 20+ air yards he completes ", pct(deep$comp), " (", deep$n, " attempts) against a league rate of ",
-                        pct(lg$comp[lg$depth == "Deep (20+)"]), "."),
-      x = NULL, y = "Completion rate", caption = caption("Expected completion: the nflfastR completion-probability model.", credit = HEADS)
-    ) +
-    theme_nfl() + theme(legend.position = "top", legend.justification = "left", panel.grid.major.x = element_blank())
+      subtitle = paste0("Completion rate by depth of throw: ", kw("Caleb Williams", ORANGE), " vs the ", kw("league", GRAY), " (attempts in brackets)"),
+      x = NULL, y = "Completion rate", caption = caption("Expected completion: nflfastR model", credit = HEADS)) +
+    theme_nfl() + theme(panel.grid.major.x = element_blank())
   save_chart(g, "B4_caleb_by_depth", w = 12.5, h = 7.4)
 }
 
@@ -187,13 +181,8 @@ chart_bears_backfield <- function() {
     scale_x_continuous(expand = expansion(mult = c(0.45, 0.45)), labels = NULL) +
     labs(
       title = title,
-      subtitle = paste0("Chicago's top two backs, 2026 Weeks 1-8: ", lead$name, " ", lead$carries, " carries, ", other$name, " ", other$carries, ". ",
-                        last_name(eff$name), ": ", signed(eff$epa), " EPA per carry, ", number(eff$ypc, 0.1), " yards per carry, ",
-                        pct(eff$expl), " of runs gain 10+.\n", last_name(noeff$name), ": ", signed(noeff$epa), ", ", number(noeff$ypc, 0.1),
-                        ", ", pct(noeff$expl), ". Success rate (a run that keeps the offense on schedule) is close: ",
-                        pct(lead$succ), " vs ", pct(other$succ), "."),
-      x = NULL, y = NULL, caption = caption(credit = HEADS)
-    ) +
+      subtitle = "Chicago's top two running backs, 2026 Weeks 1-8",
+      x = NULL, y = NULL, caption = caption("Success rate: share of runs with positive EPA", credit = HEADS)) +
     theme_nfl_axis(panel.grid.major = element_blank(), axis.text.y = ggpath::element_path(size = 3.2),
                    strip.text = element_text(size = 12, face = "bold"))
   save_chart(g, "B5_bears_backfield", w = 13, h = 5.6)
@@ -217,16 +206,14 @@ chart_bears_games <- function() {
     geom_col(aes(fill = caleb), width = 0.62) +
     geom_nfl_logos(aes(y = ifelse(epa >= 0, epa + 0.06, epa - 0.06), team_abbr = opp), width = 0.055) +
     geom_text(aes(y = ifelse(epa >= 0, epa + 0.135, epa - 0.135), label = res), family = "RobotoNFL", fontface = "bold", size = 3.6) +
-    scale_fill_manual(values = c(`TRUE` = bears_col()[["orange"]], `FALSE` = "#9aa6b2")) +
+    scale_fill_manual(values = c(`TRUE` = ORANGE, `FALSE` = GRAY)) +
     scale_x_continuous(breaks = g1$week, labels = paste0("Wk ", g1$week, "\n", g1$where, " ", g1$opp, "\n", last_name(g1$qb))) +
     scale_y_continuous(labels = function(v) signed(v), breaks = pretty_breaks(6),
                        limits = c(min(0, min(g1$epa)) - 0.2, max(g1$epa) + 0.2)) +
     labs(
       title = paste0("The Bears are ", sum(w$pf > w$pa), "-", sum(w$pf < w$pa), " when Caleb Williams starts, scoring ",
                      number(mean(w$pf), 0.1), " a game (", number(mean(wo$pf), 0.1), " without him)"),
-      subtitle = paste0("Chicago's offensive EPA per play in each 2026 game (passes and runs). Orange: Williams started; gray: ",
-                        paste(unique(wo$qb), collapse = " or "), ".\nThe offense averages ", signed(mean(w$epa)), " EPA per play with Williams and ",
-                        signed(mean(wo$epa)), " without him. Without him the defense allowed ", paste(wo$pa, collapse = ", "), " points."),
+      subtitle = paste0("Chicago's offensive EPA per play each game: ", kw("Williams started", ORANGE), ", ", kw(paste(unique(last_name(wo$qb)), collapse = " or "), GRAY), " started"),
       x = NULL, y = "Offensive EPA per play", caption = caption()
     ) +
     theme_nfl() + theme(panel.grid.major.x = element_blank(), axis.text.x = element_text(lineheight = 1.1))
@@ -255,13 +242,9 @@ chart_caleb_sacks <- function() {
     labs(
       title = paste0("Caleb Williams cut his sack rate from ", pct(cw$rate[1], 0.1), " as a rookie to ", pct(cw$rate[2], 0.1),
                      " in 2025; it is back to ", pct(cw$rate[3], 0.1), " this season"),
-      subtitle = paste0("Sacks per dropback for every qualifying quarterback (200+ dropbacks in 2024 and 2025, 150+ through Week 8 of 2026). ",
-                        "Fewer is better, so the axis runs downward. Dashed lines: league rate. His ", cw$sk[1], " rookie sacks ranked ",
-                        ordinal(cw$rk[1]), " of ", cw$n[1], "."),
+      subtitle = "Sacks per dropback. Gray dots: every qualifying QB; dashes: league rate. Fewer is better, so the axis runs down",
       x = NULL, y = "Sacked on this share of dropbacks",
-      caption = caption("Sacks are charged to the quarterback; they also reflect pass protection and play design.",
-                        span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)
-    ) +
+      caption = caption("Sacks also reflect protection", span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)) +
     theme_nfl() + theme(panel.grid.major.x = element_blank())
   save_chart(g, "B7_caleb_sack_rate", w = 12.5, h = 7.4)
 }
@@ -290,11 +273,9 @@ chart_bears_third_down <- function() {
     scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0.28, 0.47)) +
     labs(
       title = paste0("Under Ben Johnson, the Bears went from ", ordinal(a$rk), " to ", ordinal(b$rk), " on third down"),
-      subtitle = paste0("Chicago's third-down conversion rate by season, with its league rank (passes and runs that gained the line to gain). ",
-                        "Dashed: league average. *", SEASON, " is Weeks ", min(WEEKS), "-", max(WEEKS), " (", ordinal(chi$rk[chi$season == SEASON]), ")."),
+      subtitle = paste0("Third-down conversion rate and league rank by season; dashed = league average. *", SEASON, " = Weeks ", min(WEEKS), "-", max(WEEKS)),
       x = NULL, y = "Third-down conversion rate",
-      caption = caption("Eberflus was replaced by interim head coach Thomas Brown in November 2024.", span = paste0("2018-", SEASON), credit = NULL)
-    ) +
+      caption = caption("Eberflus was replaced by interim coach Thomas Brown in Nov. 2024", span = paste0("2018-", SEASON), credit = NULL)) +
     theme_nfl() + theme(panel.grid.major.x = element_blank())
   save_chart(g, "B8_bears_third_down_by_coach", w = 12.5, h = 7)
 }
@@ -333,8 +314,7 @@ chart_bears_defense <- function() {
     labs(
       title = paste0("The Bears defense gives up yards and big plays, then wins the down that matters: ", ordinal(best$rank),
                      " in ", tolower(best$metric), ", ", ordinal(worst$rank), " in ", tolower(worst$metric)),
-      subtitle = paste0("Chicago's defensive rank among 32 teams (1st = best), 2026 Weeks 1-8, with the value and the league average. ",
-                        "A third-down conversion = the offense gained the line to gain."),
+      subtitle = "Chicago's defensive rank among 32 teams (1st = best), with the value and the league average",
       x = "Rank (1st = best, to the right)", y = NULL, caption = caption()
     ) +
     theme_nfl() + theme(panel.grid.major.y = element_blank(), axis.text.y = element_text(face = "bold", size = 12))

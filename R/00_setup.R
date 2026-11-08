@@ -13,6 +13,7 @@ suppressPackageStartupMessages({
   library(ggfx)
   library(scales)
   library(systemfonts)
+  library(ggtext)
 })
 
 ROOT <- normalizePath(".")
@@ -59,8 +60,8 @@ theme_nfl <- function(base_size = 13) {
     plot.title.position = "plot",
     plot.caption.position = "plot",
     plot.title = element_text(family = "RobotoNFLBlack", size = rel(1.75), hjust = 0, margin = margin(b = 4)),
-    plot.subtitle = element_text(size = rel(1.0), color = MUTED, hjust = 0, lineheight = 1.15, margin = margin(b = 14)),
-    plot.caption = element_text(size = rel(0.7), color = "#6b6b6b", hjust = 0, lineheight = 1.2, margin = margin(t = 12)),
+    plot.subtitle = element_markdown(size = rel(1.05), color = MUTED, hjust = 0, lineheight = 1.2, margin = margin(b = 16)),
+    plot.caption = element_text(size = rel(0.68), color = "#7a7a7a", hjust = 0, margin = margin(t = 12)),
     plot.margin = margin(20, 26, 14, 20),
     legend.position = "none",
     legend.background = element_rect(fill = BG, color = NA),
@@ -72,14 +73,18 @@ theme_nfl <- function(base_size = 13) {
 
 theme_nfl_axis <- function(..., base_size = 13) theme_nfl(base_size) + theme(...)
 
-HEADS <- "Headshots: NFL.com via nflverse, circle-cropped with cropcircles after the Advanced Headshots Method in Congelio's book (4.15)."
-LOGOS <- "Team logos and headshots via nflplotR."
+HEADS <- "Headshots: NFL.com via nflverse, circle-cropped (Congelio 4.15 method)"
+LOGOS <- "Logos and headshots via nflplotR"
 
-caption <- function(..., span = SPAN, credit = LOGOS) {
-  paste(c(..., paste0("Data: nflverse via nflreadr (", span, ")."), credit), collapse = "\n")
+# one line: an optional short note, the data credit, the image credit
+caption <- function(note = NULL, span = SPAN, credit = LOGOS) {
+  paste(c(note, paste0("Data: nflverse via nflreadr, ", span), credit), collapse = "   \u00b7   ")
 }
 
-# wrap the title and subtitle to the chart width (characters per inch measured on these fonts and sizes)
+GREEN <- "#1a7f4b"; RED <- "#c0392b"; ORANGE <- "#E64100"; NAVY <- "#0B162A"; GRAY <- "#8a96a3"
+# a coloured, bold word for subtitles: the subtitle doubles as the legend
+kw <- function(text, col) sprintf("<b style='color:%s'>%s</b>", col, text)
+
 # balanced: a paragraph that needs n lines is wrapped at about 1/n of its length, so no line is a lone word
 wrap_text <- function(x, width) {
   para <- strsplit(x, "\n")[[1]]
@@ -91,8 +96,11 @@ wrap_text <- function(x, width) {
 
 save_chart <- function(p, name, w = 12, h = 6.75, dpi = 300) {
   lb <- tryCatch(get_labs(p), error = function(e) list())
-  if (is.character(lb$subtitle)) p <- p + labs(subtitle = wrap_text(lb$subtitle, floor(w * 11)))
-  if (is.character(lb$title)) p <- p + labs(title = wrap_text(lb$title, floor(w * 6.6)))
+  if (is.character(lb$title)) p <- p + labs(title = wrap_text(lb$title, floor(w * 6.0)))
+  if (is.character(lb$subtitle)) {
+    plain <- gsub("<[^>]+>", "", lb$subtitle)
+    if (nchar(plain) > w * 10.5) message("SUBTITLE TOO LONG (", nchar(plain), " > ", floor(w * 10.5), "): ", name)
+  }
   path <- file.path(OUT, paste0(name, ".png"))
   ggsave(path, p, width = w, height = h, dpi = dpi, device = ragg::agg_png, bg = BG)
   message("wrote ", path)
@@ -126,3 +134,28 @@ ordinal <- function(n) paste0(n, ifelse(n %% 100 %in% 11:13, "th", c("th", "st",
 pct <- function(x, acc = 1) percent(x, accuracy = acc)
 signed <- function(x, acc = 0.01) number(x, accuracy = acc, style_positive = "plus")
 CALEB <- "00-0039918"
+and_list <- function(x) if (length(x) <= 1) x else paste0(paste(head(x, -1), collapse = ", "), " and ", tail(x, 1))
+
+# Push overlapping headshots apart. Positions are normalised to the plotted ranges (height scaled by the panel aspect),
+# and two images of widths wi, wj (fractions of panel width) must sit at least (wi + wj) / 2 * pad apart. Returns the
+# shifted centres; draw a thin segment from each true point to its image.
+spread_xy <- function(x, y, w, xlim, ylim, aspect = 1.6, pad = 1.2, iter = 500) {
+  u <- (x - xlim[1]) / diff(xlim); v <- (y - ylim[1]) / diff(ylim) / aspect
+  n <- length(u)
+  for (k in seq_len(iter)) {
+    moved <- FALSE
+    for (i in seq_len(n - 1)) for (j in (i + 1):n) {
+      need <- (w[i] + w[j]) / 2 * pad
+      dx <- u[j] - u[i]; dy <- v[j] - v[i]; dist <- sqrt(dx^2 + dy^2)
+      if (dist < need) {
+        if (dist < 1e-9) { dx <- 1e-3; dy <- 1e-3; dist <- sqrt(2e-6) }
+        push <- (need - dist) / 2
+        u[i] <- u[i] - dx / dist * push; v[i] <- v[i] - dy / dist * push
+        u[j] <- u[j] + dx / dist * push; v[j] <- v[j] + dy / dist * push
+        moved <- TRUE
+      }
+    }
+    if (!moved) break
+  }
+  data.frame(xs = xlim[1] + u * diff(xlim), ys = ylim[1] + v * aspect * diff(ylim))
+}

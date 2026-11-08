@@ -23,10 +23,9 @@ chart_explosive_td_drives <- function() {
     scale_x_continuous(labels = percent_format(accuracy = 1), breaks = pretty_breaks(6), expand = expansion(mult = c(0, 0.04))) +
     labs(
       title = "Who needs a big play to score?",
-      subtitle = "Share of each team's touchdown drives that included a gain of 20 or more yards. Labels show the counts.",
+      subtitle = "Share of each team's touchdown drives that included a gain of 20+ yards (counts on the bars)",
       x = "Touchdown drives with a 20+ yard play", y = NULL,
-      caption = caption("Passes and runs only; a drive counts once however many big plays it had.")
-    ) +
+      caption = caption()) +
     theme_nfl_axis(axis.text.y = element_nfl_logo(size = 0.8), panel.grid.major.y = element_blank())
   save_chart(g, "09_big_play_td_drives", w = 11, h = 11)
 }
@@ -56,7 +55,7 @@ chart_division_weekly <- function(division = "NFC North") {
     scale_y_continuous(labels = label_number(accuracy = 0.01, style_positive = "plus"), breaks = pretty_breaks(7)) +
     labs(
       title = paste0("How each ", division, " offense has trended"),
-      subtitle = "Season-to-date offensive EPA per play (passes and runs) after each game. A skipped week is a bye.",
+      subtitle = "Season-to-date offensive EPA per play after each game; a skipped week is a bye",
       x = NULL, y = "EPA per play, season to date",
       caption = caption()
     ) +
@@ -103,12 +102,9 @@ chart_comeback <- function() {
       title = paste0("The comeback of the season so far: ", nick(winner), " ",
                      max(info$home_score, info$away_score), ", ",
                      ifelse(winner == home, nick(away), nick(home)), " ", min(info$home_score, info$away_score)),
-      subtitle = paste0(away, " at ", home, ", Week ", info$week, ". Area above the middle line is the ", nick(home),
-                        "' win probability, below it the ", nick(away), "'.\nThe winner's chances bottomed out at ",
-                        percent(low$win_wp, 0.1), " (lowest of any winner in Weeks ", min(WEEKS), "-", max(WEEKS), ")."),
+      subtitle = paste0(away, " at ", home, ", Week ", info$week, ": ", kw(nick(home), hc), " chances above the line, ", kw(nick(away), ac), " below"),
       x = NULL, y = "Win probability",
-      caption = caption("Win probability: the nflfastR model (wp), from score, time, down, distance, field position and timeouts.")
-    ) +
+      caption = caption("Win probability: nflfastR model")) +
     theme_nfl()
   save_chart(g, "11_comeback_win_probability")
 }
@@ -129,11 +125,9 @@ chart_play_action <- function() {
                        expand = expansion(mult = 0.08)) +
     labs(
       title = "Who leans on play action, and does it work?",
-      subtitle = paste0("Share of dropbacks with a play-action fake vs EPA per play-action dropback. ",
-                        comma(nrow(db)), " charted dropbacks.\nDashed lines mark the league averages."),
+      subtitle = "Play-action rate vs EPA per play-action dropback; dashed lines = league averages",
       x = "Play-action rate (share of dropbacks)", y = "EPA per play-action dropback",
-      caption = caption("Play-action charting: FTN Data via nflverse (CC BY-SA 4.0).")
-    ) +
+      caption = caption("Play-action charting: FTN Data via nflverse (CC BY-SA 4.0)")) +
     theme_nfl()
   save_chart(g, "12_play_action_rate_vs_epa")
 }
@@ -168,7 +162,7 @@ chart_quarter_heatmap <- function() {
     scale_x_discrete(position = "top") +
     labs(
       title = "When does each team score?",
-      subtitle = "Average points per game in each quarter, sorted by 1st-quarter scoring.\nOvertime points are left out. Checked: every game's quarter scores, plus overtime, add up to its final.",
+      subtitle = "Points per game in each quarter, sorted by 1st-quarter scoring (overtime left out)",
       x = NULL, y = NULL, caption = caption()
     ) +
     theme_nfl_axis(axis.text.y = element_nfl_logo(size = 0.95), panel.grid.major = element_blank(),

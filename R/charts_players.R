@@ -15,39 +15,35 @@ player_games <- function(tg) {
     left_join(team_game, by = c("posteam", "game_id"))
 }
 
-chart_target_share <- function(min_tgt = 40, n_heads = 22, n_labels = 22) {
+chart_target_share <- function(min_tgt = 40, n_heads = 12) {
   pl <- data_rds("players")
   tg <- targets()
-  pbp_names <- tg |> count(receiver_player_id, receiver_player_name) |> group_by(id = receiver_player_id) |>
-    slice_max(n, n = 1, with_ties = FALSE) |> ungroup() |> select(id, pbp_name = receiver_player_name)
   pg <- player_games(tg)
   d <- pg |> group_by(id = receiver_player_id) |>
-    summarise(team = main_team(posteam), games = n_distinct(game_id), tgt = sum(tgt),
-              ts = sum(tgt) / sum(team_tgt), ays = sum(ay) / sum(team_ay), .groups = "drop") |>
+    summarise(team = main_team(posteam), tgt = sum(tgt), ts = sum(tgt) / sum(team_tgt), ays = sum(ay) / sum(team_ay),
+              .groups = "drop") |>
     filter(tgt >= min_tgt) |>
-    mutate(wopr = 1.5 * ts + 0.7 * ays) |>
-    left_join(pl |> select(id = gsis_id, name), by = "id") |>
-    left_join(pbp_names, by = "id") |>
-    mutate(label = ifelse(is.na(name), sub("^.*\\.", "", pbp_name), last_name(name)),
-           rank = rank(-wopr, ties.method = "first"))
-  heads <- d |> filter(rank <= n_heads)
+    mutate(wopr = 1.5 * ts + 0.7 * ays, rank = rank(-wopr, ties.method = "first")) |>
+    left_join(pl |> select(id = gsis_id, name), by = "id")
+  heads <- d |> filter(rank <= n_heads) |> left_join(sprites(), by = c("id" = "gsis_id"))
+  W <- 0.07
+  heads <- cbind(heads, spread_xy(heads$ts, heads$ays, rep(W, nrow(heads)), range(d$ts), range(d$ays), aspect = 13 / 8.2))
+  lead <- d |> slice_min(rank, n = 1)
   g <- ggplot(d, aes(ts, ays)) +
     geom_mean_lines(aes(x0 = ts, y0 = ays), color = "black", linetype = "dashed", alpha = 0.4, linewidth = 0.5) +
-    geom_point(data = d |> filter(rank > n_heads), aes(color = team), size = 2.6, alpha = 0.75) +
-    scale_color_nfl(type = "primary") +
-    geom_nfl_headshots(data = heads, aes(player_gsis = id), height = 0.068) +
-    geom_text_repel(data = d |> filter(rank <= n_labels), aes(label = label), size = 3, family = "RobotoNFL",
-                    fontface = "bold", color = INK, point.size = 16, box.padding = 0.25, min.segment.length = 0.4,
-                    segment.color = "#9a9a9a", segment.size = 0.3, max.overlaps = Inf, seed = 2026) +
-    scale_x_continuous(labels = percent_format(accuracy = 1), breaks = pretty_breaks(7), expand = expansion(mult = 0.05)) +
-    scale_y_continuous(labels = percent_format(accuracy = 1), breaks = pretty_breaks(7), expand = expansion(mult = 0.08)) +
+    geom_point(data = d |> filter(rank > n_heads), color = GRAY, size = 2.6, alpha = 0.5) +
+    geom_segment(data = heads, aes(x = ts, y = ays, xend = xs, yend = ys), color = "#9a9a9a", linewidth = 0.4) +
+    geom_point(data = heads, aes(ts, ays), color = INK, size = 1.3) +
+    ggpath::geom_from_path(data = heads, aes(x = xs, y = ys, path = sprite), width = W) +
+    scale_x_continuous(labels = percent_format(accuracy = 1), breaks = pretty_breaks(7), expand = expansion(mult = 0.06)) +
+    scale_y_continuous(labels = percent_format(accuracy = 1), breaks = pretty_breaks(7), expand = expansion(mult = 0.1)) +
     labs(
-      title = "Who's the focal point of the passing game?",
-      subtitle = paste0("Share of team targets vs share of team air yards, in games each player was targeted. Minimum ",
-                        min_tgt, " targets.\nHeadshots: the top ", n_heads,
-                        " by weighted opportunity (WOPR); dots are everyone else, in their team's color."),
+      title = paste0(lead$name, " is the focal point of his passing game like no one else: ", pct(lead$ts), " of targets, ",
+                     pct(lead$ays), " of air yards"),
+      subtitle = paste0("Share of team targets vs share of team air yards, ", min_tgt, "+ targets. Headshots: the top ",
+                        n_heads, " by weighted opportunity (WOPR)"),
       x = "Target share", y = "Air-yards share",
-      caption = caption("WOPR = 1.5 x target share + 0.7 x air-yards share (Josh Hermsmeyer's weighted opportunity rating).")
+      caption = caption("WOPR = 1.5 x target share + 0.7 x air-yards share", credit = HEADS)
     ) +
     theme_nfl()
   save_chart(g, "06_target_share_vs_air_yards", w = 13, h = 8.2)
@@ -80,8 +76,7 @@ chart_q1_target_share <- function(min_games = 5, min_q1 = 10, top = 15) {
                        expand = expansion(mult = c(0, 0.08))) +
     labs(
       title = "Who gets fed early?",
-      subtitle = paste0("Share of the team's 1st-quarter targets, in games each player was targeted. Top ", top,
-                        "; minimum ", min_games, " games and ", min_q1, " 1st-quarter targets."),
+      subtitle = paste0("Share of the team's 1st-quarter targets in games played. Top ", top, "; ", min_games, "+ games and ", min_q1, "+ Q1 targets"),
       x = "Share of team 1st-quarter targets", y = NULL,
       caption = caption()
     ) +
@@ -110,9 +105,7 @@ chart_qb_air_yards_ridges <- function(top = 16) {
     scale_y_discrete(expand = expansion(add = c(0.3, 1.6))) +
     labs(
       title = "How far downfield does each quarterback throw?",
-      subtitle = paste0("Air yards on every pass attempt for the ", top,
-                        " quarterbacks with the most attempts, sorted by average depth (shown at right).\n",
-                        "White lines mark the average and one standard deviation either side."),
+      subtitle = paste0("Air yards on every attempt for the ", top, " busiest passers, sorted by average depth. White lines: mean and one SD"),
       x = "Air yards (distance past the line of scrimmage)", y = NULL,
       caption = caption()
     ) +
@@ -143,11 +136,9 @@ chart_ngs_ryoe <- function(min_att = 60) {
                        breaks = pretty_breaks(7), expand = expansion(mult = 0.32)) +
     labs(
       title = "Who's creating yards on the ground?",
-      subtitle = paste0("Rushing yards over expected per carry, from Next Gen Stats player tracking. Minimum ", min_att,
-                        " carries.\nExpected yards account for blockers, defenders and their speed and position at handoff."),
+      subtitle = paste0("Rushing yards over expected per carry, from Next Gen Stats player tracking. ", min_att, "+ carries"),
       x = "Rushing yards over expected per carry", y = NULL,
-      caption = caption("Rushing yards over expected: NFL Next Gen Stats, via nflverse.")
-    ) +
+      caption = caption("Rushing yards over expected: NFL Next Gen Stats")) +
     theme_nfl_axis(axis.text.y = element_nfl_headshot(size = 1.05), panel.grid.major.y = element_blank())
   save_chart(g, "13_rushing_yards_over_expected", w = 12, h = 10)
 }

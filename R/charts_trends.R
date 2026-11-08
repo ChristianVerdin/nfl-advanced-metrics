@@ -21,10 +21,12 @@ trend_halves <- function() {
     mutate(chg = net2 - net1)
 }
 
-chart_trend_dumbbell <- function() {
-  d <- trend_halves() |> mutate(team = reorder(team, chg), dir = ifelse(chg >= 0, "up", "down"))
+chart_trend_dumbbell <- function(k = 8) {
+  all <- trend_halves()
+  n_up <- sum(all$chg > 0)
+  d <- bind_rows(all |> slice_max(chg, n = k), all |> slice_min(chg, n = k)) |>
+    mutate(team = reorder(team, chg), dir = ifelse(chg >= 0, "up", "down"))
   up <- d |> slice_max(chg, n = 1); dn <- d |> slice_min(chg, n = 1)
-  n_up <- sum(d$chg > 0)
   g <- ggplot(d, aes(y = team)) +
     geom_vline(xintercept = 0, color = INK, linewidth = 0.35) +
     geom_segment(aes(x = net1, xend = net2, yend = team, color = dir), linewidth = 1.6,
@@ -37,46 +39,41 @@ chart_trend_dumbbell <- function() {
     labs(
       title = paste0("The ", nick(up$team), " improved the most from the first four weeks to the next four (", signed(up$chg),
                      "); the ", nick(dn$team), " fell the furthest (", signed(dn$chg), ")"),
-      subtitle = paste0("Net EPA per play (offense minus defense allowed) in Weeks 1-4 (gray dot) and Weeks 5-8 (arrow head). ",
-                        n_up, " of 32 teams improved. Sorted by the change, shown at the right. Not adjusted for opponents."),
-      x = "Net EPA per play", y = NULL, caption = caption()
-    ) +
-    theme_nfl_axis(axis.text.y = element_nfl_logo(size = 0.75), panel.grid.major.y = element_blank())
-  save_chart(g, "T1_trend_first_vs_second_four_weeks", w = 11.5, h = 12)
+      subtitle = paste0("Net EPA per play, Weeks 1-4 (dot) to Weeks 5-8 (arrow): the ", k, " ", kw("biggest risers", GREEN), " and ", kw("fallers", RED)),
+      x = "Net EPA per play", y = NULL, caption = caption(paste0("Net EPA = offense minus defense allowed, not opponent-adjusted. All 32: ", n_up, " improved, ", 32 - n_up, " declined"))) +
+    theme_nfl_axis(axis.text.y = element_nfl_logo(size = 0.9), panel.grid.major.y = element_blank())
+  save_chart(g, "T1_trend_first_vs_second_four_weeks", w = 12, h = 8.4)
 }
 
 chart_trend_arrows <- function() {
-  d <- trend_halves()
-  both_up <- d |> filter(off2 > off1, def2 < def1); both_dn <- d |> filter(off2 < off1, def2 > def1)
-  d <- d |> mutate(kind = ifelse(team %in% both_up$team, "both_up", ifelse(team %in% both_dn$team, "both_dn", "mixed")))
-  g <- ggplot(d) +
-    geom_vline(xintercept = mean(c(d$off1, d$off2)), linetype = "dashed", color = MUTED, alpha = 0.6) +
-    geom_hline(yintercept = mean(c(d$def1, d$def2)), linetype = "dashed", color = MUTED, alpha = 0.6) +
-    geom_segment(data = d |> filter(kind == "mixed"), aes(x = off1, y = def1, xend = off2, yend = def2),
-                 color = "#c9ced6", linewidth = 0.6, arrow = arrow(length = unit(0.07, "inches"), type = "closed")) +
-    geom_segment(data = d |> filter(kind != "mixed"), aes(x = off1, y = def1, xend = off2, yend = def2, color = kind),
-                 linewidth = 1.2, arrow = arrow(length = unit(0.11, "inches"), type = "closed")) +
-    geom_point(data = d |> filter(kind != "mixed"), aes(off1, def1, color = kind), size = 2.2) +
-    geom_nfl_logos(data = d |> filter(kind == "mixed"), aes(x = off2, y = def2, team_abbr = team), width = 0.03, alpha = 0.35) +
-    geom_nfl_logos(data = d |> filter(kind != "mixed"), aes(x = off2, y = def2, team_abbr = team), width = 0.045) +
-    annotate("text", x = Inf, y = -Inf, label = "better offense, better defense", hjust = 1.05, vjust = 1.6,
-             family = "RobotoNFL", fontface = "bold", size = 3.6, color = "#1a7f4b") +
-    annotate("text", x = -Inf, y = Inf, label = "worse on both sides", hjust = -0.05, vjust = -0.8,
-             family = "RobotoNFL", fontface = "bold", size = 3.6, color = "#c0392b") +
-    scale_color_manual(values = c(both_up = "#1a7f4b", both_dn = "#c0392b", mixed = "#9aa6b2")) +
-    scale_x_continuous(labels = function(v) signed(v), breaks = pretty_breaks(7)) +
-    scale_y_reverse(labels = function(v) signed(v), breaks = pretty_breaks(7)) +
-    coord_cartesian(clip = "off") +
+  d <- trend_halves() |>
+    mutate(kind = ifelse(off2 > off1 & def2 < def1, "up", ifelse(off2 < off1 & def2 > def1, "down", "mixed")))
+  n_mixed <- sum(d$kind == "mixed")
+  d2 <- d |> filter(kind != "mixed") |>
+    mutate(panel = factor(ifelse(kind == "up", paste0("Better on both sides (", sum(d$kind == "up"), ")"),
+                                 paste0("Worse on both sides (", sum(d$kind == "down"), ")")),
+                          levels = c(paste0("Better on both sides (", sum(d$kind == "up"), ")"),
+                                     paste0("Worse on both sides (", sum(d$kind == "down"), ")"))))
+  g <- ggplot(d2) +
+    geom_vline(xintercept = mean(c(d$off1, d$off2)), linetype = "dashed", color = MUTED, alpha = 0.5) +
+    geom_hline(yintercept = mean(c(d$def1, d$def2)), linetype = "dashed", color = MUTED, alpha = 0.5) +
+    geom_segment(aes(x = off1, y = def1, xend = off2, yend = def2, color = kind), linewidth = 1.2,
+                 arrow = arrow(length = unit(0.11, "inches"), type = "closed")) +
+    geom_point(aes(off1, def1, color = kind), size = 2.4) +
+    geom_nfl_logos(aes(x = off2, y = def2, team_abbr = team), width = 0.075) +
+    facet_wrap(~panel) +
+    scale_color_manual(values = c(up = GREEN, down = RED)) +
+    scale_x_continuous(labels = function(v) signed(v), breaks = pretty_breaks(5)) +
+    scale_y_reverse(labels = function(v) signed(v), breaks = pretty_breaks(5)) +
     labs(
-      title = paste0(nrow(both_up), " teams got better on both sides of the ball after Week 4; ", nrow(both_dn),
+      title = paste0(sum(d$kind == "up"), " teams got better on both sides of the ball after Week 4; ", sum(d$kind == "down"),
                      " got worse on both"),
-      subtitle = paste0("Each arrow runs from a team's Weeks 1-4 position (gray dot) to Weeks 5-8 (logo). Up and to the right is better. ",
-                        "Green: improved on offense and defense (", paste(nick(both_up$team), collapse = ", "), "). Red: declined on both (",
-                        paste(nick(both_dn$team), collapse = ", "), "). Faded: better on one side, worse on the other."),
-      x = "Offense: EPA per play", y = "Defense: EPA per play allowed (lower is better)", caption = caption()
+      subtitle = "Offense vs defense EPA per play: Weeks 1-4 (dot) to Weeks 5-8 (logo). Up and to the right is better",
+      x = "Offense: EPA per play", y = "Defense: EPA allowed per play",
+      caption = caption(paste0(n_mixed, " teams improved on one side only (not shown)"))
     ) +
-    theme_nfl()
-  save_chart(g, "T2_trend_offense_defense_arrows", w = 13, h = 9)
+    theme_nfl() + theme(strip.text = element_text(size = 13, hjust = 0, face = "bold"))
+  save_chart(g, "T2_trend_offense_defense_arrows", w = 13, h = 7.6)
 }
 
 chart_trend_small_multiples <- function() {
@@ -104,8 +101,7 @@ chart_trend_small_multiples <- function() {
     scale_y_continuous(breaks = c(-0.5, 0, 0.5), labels = function(v) signed(v, 0.1)) +
     labs(
       title = "Every team's season so far, game by game",
-      subtitle = paste0("Bars: net EPA per play in each game (green above zero). Line: three-game rolling average. ",
-                        "The end dot is green if a team's last three games beat its first three. Grouped by division, AFC then NFC; gaps are byes."),
+      subtitle = paste0("Net EPA per play each game (bars) and three-game average (line). End dot: ", kw("trending up", GREEN), " or ", kw("down", RED), " vs the first three games"),
       x = "Week", y = "Net EPA per play", caption = caption()
     ) +
     theme_nfl_axis(strip.text = element_nfl_logo(size = 0.9), panel.spacing.x = unit(10, "pt"), panel.spacing.y = unit(8, "pt"),
@@ -131,11 +127,9 @@ chart_trend_bump <- function(k = 4) {
     scale_y_reverse(breaks = c(1, 8, 16, 24, 32), labels = function(v) ordinal(v), expand = expansion(add = 0.8)) +
     scale_x_continuous(breaks = 1:3, labels = c("Weeks 1-3", "Weeks 4-6", "Weeks 7-8"), limits = c(0.75, 3.25)) +
     labs(
-      title = paste0("The biggest climbs: ", paste0(nick(risers$team), " (", ordinal(risers$r1), " to ", ordinal(risers$r3), ")", collapse = ", ")),
-      subtitle = paste0("Net EPA per play rank (1st = best) in three stretches of the season. Green: the ", k, " biggest risers. Red: the ", k,
-                        " biggest fallers (", paste0(nick(fallers$team), " ", ordinal(fallers$r1), " to ", ordinal(fallers$r3), collapse = ", "), ")."),
-      x = NULL, y = "Rank", caption = caption("Weeks 7-8 is two games or fewer per team, so it moves the most.")
-    ) +
+      title = paste0(and_list(nick(risers$team)), " climbed; ", and_list(nick(fallers$team)), " fell"),
+      subtitle = paste0("Net EPA per play rank in three stretches of the season: the ", k, " ", kw("biggest risers", GREEN), " and ", kw("biggest fallers", RED)),
+      x = NULL, y = "Rank", caption = caption("Weeks 7-8 is two games or fewer per team")) +
     theme_nfl() + theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_line(color = "#ececec"),
                         axis.text.x = element_text(face = "bold", size = 12))
   save_chart(g, "T4_rank_bump_chart", w = 12, h = 10)
