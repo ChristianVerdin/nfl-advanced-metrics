@@ -9,15 +9,14 @@ period_epa <- function(p, periods) {
   inner_join(off, def, by = c("team", "period")) |> mutate(net = off - def)
 }
 
-halves <- function(w) ifelse(w <= 4, "Weeks 1-4", "Weeks 5-8")
+halves <- function(w) ifelse(w <= HALF, "a", "b")   # first half of the weeks so far vs the rest
 nick <- function(a) { tm <- data_rds("teams"); tm$team_nick[match(a, tm$team_abbr)] }
 
 trend_halves <- function() {
   period_epa(data_rds("pbp"), halves) |>
     select(team, period, off, def, net) |>
     pivot_wider(names_from = period, values_from = c(off, def, net)) |>
-    rename(off1 = `off_Weeks 1-4`, off2 = `off_Weeks 5-8`, def1 = `def_Weeks 1-4`, def2 = `def_Weeks 5-8`,
-           net1 = `net_Weeks 1-4`, net2 = `net_Weeks 5-8`) |>
+    rename(off1 = off_a, off2 = off_b, def1 = def_a, def2 = def_b, net1 = net_a, net2 = net_b) |>
     mutate(chg = net2 - net1)
 }
 
@@ -39,7 +38,7 @@ chart_trend_dumbbell <- function(k = 8) {
     labs(
       title = paste0("The ", nick(up$team), " improved the most from the first four weeks to the next four (", signed(up$chg),
                      "); the ", nick(dn$team), " fell the furthest (", signed(dn$chg), ")"),
-      subtitle = paste0("Net EPA per play, Weeks 1-4 (dot) to Weeks 5-8 (arrow): the ", k, " ", kw("biggest risers", GREEN), " and ", kw("fallers", RED)),
+      subtitle = paste0("Net EPA per play, ", wk_span(1, HALF), " (dot) to ", wk_span(HALF + 1, LASTW), " (arrow): the ", k, " ", kw("biggest risers", GREEN), " and ", kw("fallers", RED)),
       x = "Net EPA per play", y = NULL, caption = caption(paste0("Net EPA = offense minus defense allowed, not opponent-adjusted. All 32: ", n_up, " improved, ", 32 - n_up, " declined"))) +
     theme_nfl_axis(axis.text.y = element_nfl_logo(size = 0.9), panel.grid.major.y = element_blank())
   save_chart(g, "T1_trend_first_vs_second_four_weeks", w = 12, h = 8.4)
@@ -62,11 +61,11 @@ chart_trend_arrows <- function(k = 8) {
     scale_x_continuous(labels = function(v) signed(v), breaks = pretty_breaks(4), expand = expansion(mult = 0.15)) +
     scale_y_reverse(labels = function(v) signed(v), breaks = pretty_breaks(4), expand = expansion(mult = 0.15)) +
     labs(
-      title = paste0(length(rose$team), " of today's top ", k, " climbed there after Week 4; ", length(fell$team), " of the bottom ", k, " fell there"),
-      subtitle = paste0("Offense vs defense EPA per play: Weeks 1-4 (dot) to Weeks 5-8 (logo), ", kw("improved", GREEN), " or ",
+      title = paste0(length(rose$team), " of today's top ", k, " climbed there after Week ", HALF, "; ", length(fell$team), " of the bottom ", k, " fell there"),
+      subtitle = paste0("Offense vs defense EPA per play: ", wk_span(1, HALF), " (dot) to ", wk_span(HALF + 1, LASTW), " (logo), ", kw("improved", GREEN), " or ",
                         kw("declined", RED), ". Up and right is better"),
       x = "Offense: EPA per play", y = "Defense: EPA allowed per play",
-      caption = caption("Best and worst by net EPA per play in Weeks 5-8; each panel has its own scale")
+      caption = caption(paste0("Best and worst by net EPA per play in ", wk_span(HALF + 1, LASTW), "; each panel has its own scale"))
     ) +
     theme_nfl() + theme(strip.text = element_text(size = 13, hjust = 0, face = "bold"))
   save_chart(g, "T2_trend_offense_defense_arrows", w = 13, h = 7.6)
@@ -106,9 +105,10 @@ chart_trend_small_multiples <- function() {
 }
 
 chart_trend_bump <- function(k = 4) {
-  thirds <- function(w) ifelse(w <= 3, "Weeks 1-3", ifelse(w <= 6, "Weeks 4-6", "Weeks 7-8"))
+  labs3 <- c(wk_span(1, B3[1]), wk_span(B3[1] + 1, B3[2]), wk_span(B3[2] + 1, LASTW))
+  thirds <- function(w) ifelse(w <= B3[1], labs3[1], ifelse(w <= B3[2], labs3[2], labs3[3]))
   d <- period_epa(data_rds("pbp"), thirds) |> group_by(period) |> mutate(rank = rank(-net, ties.method = "first")) |> ungroup() |>
-    mutate(x = match(period, c("Weeks 1-3", "Weeks 4-6", "Weeks 7-8")))
+    mutate(x = match(period, labs3))
   mv <- d |> select(team, x, rank) |> pivot_wider(names_from = x, values_from = rank, names_prefix = "r") |> mutate(mv = r1 - r3)
   risers <- mv |> slice_max(mv, n = k, with_ties = FALSE); fallers <- mv |> slice_min(mv, n = k, with_ties = FALSE)
   hl <- d |> filter(team %in% c(risers$team, fallers$team)) |>
@@ -123,12 +123,12 @@ chart_trend_bump <- function(k = 4) {
     facet_wrap(~team, nrow = 2) +
     scale_color_manual(values = c(rise = GREEN, fall = RED)) +
     scale_y_reverse(limits = c(33, 0), breaks = c(1, 8, 16, 24, 32), labels = function(v) ordinal(v)) +
-    scale_x_continuous(breaks = 1:3, labels = c("Wk 1-3", "Wk 4-6", "Wk 7-8"), limits = c(0.7, 3.3)) +
+    scale_x_continuous(breaks = 1:3, labels = sub("Weeks ", "Wk ", sub("Week ", "Wk ", labs3)), limits = c(0.7, 3.3)) +
     labs(
       title = paste0(and_list(nick(risers$team)), " climbed; ", and_list(nick(fallers$team)), " fell"),
       subtitle = paste0("Net EPA per play rank in three stretches of the season (1st = best): the ", k, " ", kw("biggest risers", GREEN),
                         " and ", kw("biggest fallers", RED)),
-      x = NULL, y = "Rank", caption = caption("Shaded: top 8 and bottom 8. Weeks 7-8 is two games or fewer per team")
+      x = NULL, y = "Rank", caption = caption(paste0("Shaded: top 8 and bottom 8. ", labs3[3], " is the shortest stretch"))
     ) +
     theme_nfl_axis(strip.text = element_nfl_logo(size = 1.1), panel.grid.major.x = element_blank(),
                    axis.text.x = element_text(size = 9.5, color = "#555555"), panel.spacing.x = unit(14, "pt"))

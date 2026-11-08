@@ -23,8 +23,16 @@ dir.create(DATA, showWarnings = FALSE)
 dir.create(OUT, showWarnings = FALSE)
 
 SEASON <- 2026
-WEEKS <- 1:8
-SPAN <- sprintf("%d regular season, Weeks %d-%d", SEASON, min(WEEKS), max(WEEKS))
+# Weeks covered = the snapshot's (R/01_data.R picks the last week whose games are all final); 1:8 before any pull
+.snap <- file.path(DATA, "SNAPSHOT.csv")
+WEEKS <- if (file.exists(.snap)) { r <- as.integer(strsplit(read.csv(.snap)$weeks, "-")[[1]]); r[1]:r[length(r)] } else 1:8
+set_weeks <- function(w) {
+  WEEKS <<- w; LASTW <<- max(w)
+  SPAN <<- sprintf("%d regular season, Weeks %d-%d", SEASON, min(w), LASTW)
+  HALF <<- ceiling(LASTW / 2); B3 <<- c(ceiling(LASTW / 3), ceiling(2 * LASTW / 3))
+}
+wk_span <- function(a, b) if (a == b) paste("Week", a) else paste0("Weeks ", a, "-", b)
+set_weeks(WEEKS)
 
 options(nflplotR.cache = "filesystem", nflreadr.verbose = FALSE)
 
@@ -120,6 +128,7 @@ players <- function() {
 }
 
 data_rds <- function(name) readRDS(file.path(DATA, paste0(name, ".rds")))
+plays_epa <- function(pbp) pbp |> filter(!is.na(epa), !is.na(posteam), pass == 1 | rush == 1)
 
 last_name <- function(x) sub("^\\S+\\s+", "", x)
 main_team <- function(x) names(sort(table(x), decreasing = TRUE))[1]

@@ -6,6 +6,6 @@ assets/headshots/sprite/
 .DS_Store
 # personal working files, not part of this project
 social/
-social/
-R/live_game.R
-scripts/snf_watch.sh
+# local notes
+CLAUDE.md
+CONTEXT.md

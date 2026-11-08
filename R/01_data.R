@@ -3,6 +3,12 @@
 
 source("R/00_setup.R")
 
+sched <- load_schedules(SEASON) |> filter(game_type == "REG")
+done <- sched |> group_by(week) |> summarise(final = all(!is.na(result)), .groups = "drop") |> arrange(week)
+last_full <- max(c(0, done$week[cumprod(done$final) == 1]))
+stopifnot(last_full >= 1)
+set_weeks(1:last_full)
+message("weeks with every game final: 1-", last_full)
 pbp_all <- load_pbp(SEASON)
 pbp <- pbp_all |> filter(season_type == "REG", week %in% WEEKS)
 

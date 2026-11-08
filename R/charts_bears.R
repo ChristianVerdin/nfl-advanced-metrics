@@ -15,7 +15,7 @@ chart_caleb_leap <- function() {
   seasons <- bind_rows(
     qb_season(h |> filter(season == 2024), 200) |> mutate(season = "2024\nrookie"),
     qb_season(h |> filter(season == 2025), 200) |> mutate(season = "2025\nyear 1 with Ben Johnson"),
-    qb_season(data_rds("pbp"), 150) |> mutate(season = "2026\nthrough Week 8")
+    qb_season(data_rds("pbp"), 150) |> mutate(season = paste0("2026\nthrough Week ", LASTW))
   ) |> mutate(season = factor(season, levels = unique(season)))
   long <- seasons |> pivot_longer(c(epa, cpoe), names_to = "metric", values_to = "value") |>
     mutate(metric = factor(ifelse(metric == "epa", "EPA per dropback", "Completion % over expected (CPOE)"),
@@ -40,7 +40,7 @@ chart_caleb_leap <- function() {
                      ordinal(r$rank[3]), " in EPA per dropback"),
       subtitle = paste0("Gray dots: every qualifying QB each season. The 2026 sample is ", r$db[3], " dropbacks in 5 starts"),
       x = NULL, y = NULL,
-      caption = caption(span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)) +
+      caption = caption(span = paste0("2024-2025 and 2026 ", wk_span(1, LASTW)), credit = HEADS)) +
     theme_nfl() + theme(strip.text = element_text(size = 13, hjust = 0), panel.grid.major.x = element_blank())
   save_chart(g, "B1_caleb_williams_leap", w = 13, h = 7.6)
 }
@@ -181,7 +181,7 @@ chart_bears_backfield <- function() {
     scale_x_continuous(expand = expansion(mult = c(0.45, 0.45)), labels = NULL) +
     labs(
       title = title,
-      subtitle = "Chicago's top two running backs, 2026 Weeks 1-8",
+      subtitle = paste0("Chicago's top two running backs, 2026 ", wk_span(1, LASTW)),
       x = NULL, y = NULL, caption = caption("Success rate: share of runs with positive EPA", credit = HEADS)) +
     theme_nfl_axis(panel.grid.major = element_blank(), axis.text.y = ggpath::element_path(size = 3.2),
                    strip.text = element_text(size = 12, face = "bold"))
@@ -226,7 +226,7 @@ chart_caleb_sacks <- function() {
     summarise(db = n(), sk = sum(sack == 1, na.rm = TRUE), .groups = "drop") |> filter(db >= m) |>
     group_by(season) |> mutate(rate = sk / db, rk = rank(rate, ties.method = "min"), n = n()) |> ungroup()
   d <- bind_rows(rate(h, 200), rate(data_rds("pbp") |> mutate(season = SEASON), 150)) |>
-    mutate(lab = c("2024" = "2024\nrookie", "2025" = "2025\nyear 1 with Ben Johnson", "2026" = "2026\nthrough Week 8")[as.character(season)])
+    mutate(lab = c("2024" = "2024\nrookie", "2025" = "2025\nyear 1 with Ben Johnson", "2026" = paste0("2026\nthrough Week ", LASTW))[as.character(season)])
   d$lab <- factor(d$lab, levels = unique(d$lab[order(d$season)]))
   cw <- d |> filter(id == CALEB) |> left_join(sprites(), by = c("id" = "gsis_id")) |> arrange(season)
   lg <- d |> group_by(lab) |> summarise(lg = sum(sk) / sum(db), .groups = "drop")
@@ -244,7 +244,7 @@ chart_caleb_sacks <- function() {
                      " in 2025; it is back to ", pct(cw$rate[3], 0.1), " this season"),
       subtitle = "Sacks per dropback. Gray dots: every qualifying QB; dashes: league rate. Fewer is better, so the axis runs down",
       x = NULL, y = "Sacked on this share of dropbacks",
-      caption = caption("Sacks also reflect protection", span = "2024-2025 and 2026 Weeks 1-8", credit = HEADS)) +
+      caption = caption("Sacks also reflect protection", span = paste0("2024-2025 and 2026 ", wk_span(1, LASTW)), credit = HEADS)) +
     theme_nfl() + theme(panel.grid.major.x = element_blank())
   save_chart(g, "B7_caleb_sack_rate", w = 12.5, h = 7.4)
 }

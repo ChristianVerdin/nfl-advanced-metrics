@@ -1,7 +1,5 @@
 # Team-level charts (logos). Each function builds one chart from data/ and saves it to out/.
 
-plays_epa <- function(pbp) pbp |> filter(!is.na(epa), !is.na(posteam), pass == 1 | rush == 1)
-
 team_epa <- function() {
   p <- plays_epa(data_rds("pbp"))
   off <- p |> group_by(team = posteam) |> summarise(off_epa = mean(epa), .groups = "drop")
