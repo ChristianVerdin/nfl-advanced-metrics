@@ -11,3 +11,9 @@ out/T3_*.png
 out/T4_*.png
 out/B8_*.png
 out/B9_*.png
+
+# personal working files, not part of this project
+social/
+social/
+R/live_game.R
+scripts/snf_watch.sh

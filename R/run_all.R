@@ -3,6 +3,7 @@
 #   Rscript R/run_all.R epa_landscape   # one chart
 
 source("R/00_setup.R")
+source("R/lib_headshots.R")
 for (f in list.files("R", pattern = "^charts_.*\\.R$", full.names = TRUE)) source(f)
 
 fns <- ls(pattern = "^chart_")

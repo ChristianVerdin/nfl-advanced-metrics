@@ -7,7 +7,8 @@ keep <- c("game_id", "season", "season_type", "week", "posteam", "defteam", "hom
           "qtr", "down", "ydstogo", "yardline_100", "drive", "fixed_drive", "fixed_drive_result", "drive_start_yard_line",
           "drive_play_count", "play_type", "pass", "rush", "qb_dropback", "pass_attempt", "sack", "complete_pass",
           "air_yards", "yards_gained", "epa", "success", "cpoe", "wp", "id", "name", "passer_player_id",
-          "receiver_player_id", "rusher_player_id", "touchdown", "kickoff_attempt", "touchback", "return_yards")
+          "receiver_player_id", "rusher_player_id", "touchdown", "kickoff_attempt", "touchback", "return_yards",
+          "total_home_score", "total_away_score", "interception", "fumble_lost", "pass_touchdown", "rush_touchdown")
 hist <- load_pbp(2018:2025)
 hist <- hist[, intersect(keep, names(hist))]
 saveRDS(hist, file.path(DATA, "pbp_2018_2025.rds"))
@@ -19,4 +20,5 @@ message("ff_opportunity: ", nrow(ffo), " rows, seasons ", paste(range(ffo$season
 
 snaps <- load_snap_counts(SEASON) |> filter(game_type == "REG", week %in% WEEKS)
 saveRDS(snaps, file.path(DATA, "snaps.rds"))
+saveRDS(load_schedules(2018:SEASON), file.path(DATA, "schedules_all.rds"))
 message("snaps 2026: ", nrow(snaps), " rows")
