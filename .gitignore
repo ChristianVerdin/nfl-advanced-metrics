@@ -1,0 +1,13 @@
+data/
+assets/headshots/raw/
+assets/headshots/circle/
+assets/headshots/sprite/
+.Rhistory
+.DS_Store
+# round-3 charts, added after review
+out/T1_*.png
+out/T2_*.png
+out/T3_*.png
+out/T4_*.png
+out/B8_*.png
+out/B9_*.png
