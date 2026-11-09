@@ -119,8 +119,8 @@ Rscript -e 'install.packages(c("nflreadr", "ggpath", "nflplotR", "cropcircles"),
 ```
 
 Versions on 2026-11-08: R 4.5.3, ggplot2 4.0.3, nflplotR 1.7.1, nflreadr 1.5.1, ggpath 1.1.2, gt 1.4.0, gtExtras 0.6.2,
-ggtext 0.2.0, cropcircles 0.2.4, geomtextpath 0.2.0, ragg 1.5.2. `build_all.sh` reads `RSCRIPT` and `PLAYWRIGHT_PY` to
-point at other installs.
+ggtext 0.2.0, cropcircles 0.2.4, geomtextpath 0.2.0, ragg 1.5.2. `build_all.sh` reads `RSCRIPT` and `PLAYWRIGHT_PY` (from the
+environment or an untracked `scripts/local.env`) to point at other installs.
 
 ```
 R/00_setup.R        theme, fonts, caption, save_chart(), spread_xy(), shared helpers

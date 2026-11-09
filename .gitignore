@@ -6,6 +6,7 @@ assets/headshots/sprite/
 .DS_Store
 # personal working files, not part of this project
 social/
-# local notes
+# local notes and machine-specific tool paths
+scripts/local.env
 CLAUDE.md
 CONTEXT.md

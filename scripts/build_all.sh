@@ -4,6 +4,8 @@
 #   scripts/build_all.sh --charts   # charts only, from the existing data/ snapshot
 set -e
 cd "$(dirname "$0")/.."
+# Tool paths: RSCRIPT and PLAYWRIGHT_PY from the environment or an untracked scripts/local.env.
+[ -f scripts/local.env ] && . scripts/local.env
 RS=${RSCRIPT:-Rscript}
 PW=${PLAYWRIGHT_PY:-python3}
 if [ "${1:-}" != "--charts" ]; then
