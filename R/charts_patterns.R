@@ -62,7 +62,7 @@ chart_td_regression <- function() {
   d <- td_halves(data_rds("ff_opportunity") |> filter(season <= 2025, week <= 18))
   r_over <- cor(d$over1, d$over2); r_xtd <- cor(d$x1, d$t2); r_td <- cor(d$t1, d$t2)
   p1 <- paste0("Luck: touchdowns above expected, per game\nr = ", number(r_over, 0.01))
-  p2 <- paste0("Opportunity: expected TDs per game (Weeks 1-8) vs actual TDs per game (Weeks 9-18)\nr = ", number(r_xtd, 0.01))
+  p2 <- paste0("Opportunity: expected TDs, then actual TDs, per game\nr = ", number(r_xtd, 0.01))
   long <- bind_rows(d |> transmute(x = over1, y = over2, panel = p1), d |> transmute(x = x1, y = t2, panel = p2)) |>
     mutate(panel = factor(panel, levels = c(p1, p2)))
   g <- ggplot(long, aes(x, y)) +
