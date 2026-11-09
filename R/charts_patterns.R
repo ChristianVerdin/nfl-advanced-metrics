@@ -23,14 +23,15 @@ chart_kickoff_rule <- function() {
     mutate(m = factor(ifelse(m == "start", "Average starting yard line after a kickoff", "Kickoff drives that cross midfield"),
                       levels = c("Average starting yard line after a kickoff", "Kickoff drives that cross midfield")),
            lab = ifelse(m == "Kickoff drives that cross midfield", pct(value), yard_line(value)),
-           era = ifelse(season >= 2024, "after", "before"))
+           era = ifelse(season >= 2024, "after", "before")) |>
+    arrange(m, season) |> group_by(m) |> mutate(line_label_pos(value)) |> ungroup()
   rules <- data.frame(x = c(2023.5, 2024.5))
   g <- ggplot(long, aes(season, value)) +
     annotate("rect", xmin = 2023.5, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "#f2b84b", alpha = 0.12) +
     geom_vline(data = rules, aes(xintercept = x), linetype = "dashed", color = MUTED) +
     geom_line(color = INK, linewidth = 1) +
     geom_point(aes(color = era), size = 3.6) +
-    geom_text(aes(label = lab), vjust = -1.1, family = "RobotoNFL", fontface = "bold", size = 3.2) +
+    geom_text(aes(label = lab, hjust = hj, vjust = vj), family = "RobotoNFL", fontface = "bold", size = 3.2) +
     facet_wrap(~m, scales = "free_y") +
     scale_color_manual(values = c(before = "#7a8794", after = "#d9822b")) +
     scale_x_continuous(breaks = 2018:SEASON, labels = function(x) ifelse(x == SEASON, paste0(x, "*"), x)) +

@@ -254,7 +254,8 @@ chart_bears_third_down <- function() {
   x <- bind_rows(h, data_rds("pbp") |> mutate(season = SEASON)) |> filter(down == 3, pass == 1 | rush == 1, !is.na(posteam))
   all <- x |> group_by(season, team = posteam) |> summarise(conv = mean(yards_gained >= ydstogo, na.rm = TRUE), .groups = "drop") |>
     group_by(season) |> mutate(rk = rank(-conv, ties.method = "min"), lg = mean(conv)) |> ungroup()
-  chi <- all |> filter(team == "CHI")
+  chi <- all |> filter(team == "CHI") |> arrange(season) |>
+    mutate(valley = line_label_pos(conv)$type == "valley", ny = ifelse(valley, -0.006, 0.006), vj = ifelse(valley, 1, 0))
   eras <- data.frame(xmin = c(2017.5, 2021.5, 2024.5), xmax = c(2021.5, 2024.5, SEASON + 0.5),
                      lab = c("Matt Nagy", "Matt Eberflus", "Ben Johnson"), fill = c("#eef0f3", "#e6e9ee", "#fbe3d6"))
   a <- chi |> filter(season == 2024); b <- chi |> filter(season == 2025)
@@ -266,7 +267,7 @@ chart_bears_third_down <- function() {
     geom_line(data = all |> distinct(season, lg), aes(season, lg), linetype = "dashed", color = MUTED) +
     geom_line(color = bears_col()[["navy"]], linewidth = 1.3) +
     geom_point(aes(color = season >= 2025), size = 4.5) +
-    geom_text(aes(label = paste0(pct(conv), "\n", ordinal(rk))), vjust = 0, nudge_y = 0.006, family = "RobotoNFL", fontface = "bold",
+    geom_text(aes(y = conv + ny, label = paste0(pct(conv), "\n", ordinal(rk)), vjust = vj), family = "RobotoNFL", fontface = "bold",
               size = 3.3, lineheight = 0.9) +
     scale_color_manual(values = c(`TRUE` = bears_col()[["orange"]], `FALSE` = bears_col()[["navy"]])) +
     scale_x_continuous(breaks = 2018:SEASON, labels = function(v) ifelse(v == SEASON, paste0(v, "*"), v)) +

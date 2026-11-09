@@ -148,6 +148,16 @@ and_list <- function(x) if (length(x) <= 1) x else paste0(paste(head(x, -1), col
 # Push overlapping headshots apart. Positions are normalised to the plotted ranges (height scaled by the panel aspect),
 # and two images of widths wi, wj (fractions of panel width) must sit at least (wi + wj) / 2 * pad apart. Returns the
 # shifted centres; draw a thin segment from each true point to its image.
+# Where a point label goes on a line chart so the line never runs through it: below a valley, upper-left on a rise,
+# upper-right on a fall, above a peak or an end. y must be in x order (one series).
+line_label_pos <- function(y) {
+  n <- length(y); prev <- c(NA, y[-n]); nxt <- c(y[-1], NA); mid <- !is.na(prev) & !is.na(nxt)
+  type <- ifelse(mid & y < prev & y < nxt, "valley", ifelse(mid & prev < y & y < nxt, "rise",
+          ifelse(mid & prev > y & y > nxt, "fall", "peak")))
+  data.frame(type = type, hj = c(valley = 0.5, rise = 1.15, fall = -0.15, peak = 0.5)[type],
+             vj = c(valley = 1.9, rise = -0.5, fall = -0.5, peak = -1.1)[type], row.names = NULL)
+}
+
 spread_xy <- function(x, y, w, xlim, ylim, aspect = 1.6, pad = 1.2, iter = 500) {
   u <- (x - xlim[1]) / diff(xlim); v <- (y - ylim[1]) / diff(ylim) / aspect
   n <- length(u)
