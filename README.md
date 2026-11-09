@@ -78,6 +78,8 @@ All charts: [`out/`](out/).
   one line, with colored bold words doing the legend's job (`ggtext`). `save_chart()` flags a subtitle that would wrap.
 - **Less clutter.** Busy scatters show headshots only for the players the title is about and gray dots for the rest; a
   small repel (`spread_xy()` in `R/00_setup.R`) nudges overlapping headshots apart with a leader line to the true point.
+  On line charts, `line_label_pos()` puts each point label where the line can't run through it: below a valley, beside a
+  rise or a fall, above a peak.
 - **Checked by eye.** Every chart was viewed after every change; clipped titles, overlapping labels and crossed arrows were
   fixed in code, not by hand.
 
