@@ -6,23 +6,23 @@ or player headshots replace legends. Titles are computed from the data, so a rer
 style follows Bradley Congelio's *Introduction to NFL Analytics with R* (chapter 4), rebuilt on the current nflverse and
 ggplot2 4 APIs.
 
-Data through 2026 Week 8. Rebuild everything with one command (`scripts/build_all.sh`).
+Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_all.sh`).
 
-![Caleb Williams went from 30th to 14th to 3rd in EPA per dropback](out/B1_caleb_williams_leap.png)
+![Caleb Williams went from 30th to 14th to 6th in EPA per dropback](out/B1_caleb_williams_leap.png)
 
 ## What the charts say
 
-- **Caleb Williams went from 30th to 14th to 3rd in EPA per dropback** over three seasons, and is 2nd in completion
-  percentage over expected. No current starter beats him on both (B1, B2). His sack rate went 9.9%, 3.8%, 7.0% (B7).
-- **Ben Johnson fixed third down:** the Bears went from 31st in 2024 to 8th in his first season, and are 9th now (B8).
-  The defense is the mirror image: 1st in third-down stops, 28th in yards per play allowed (B9).
+- **Caleb Williams went from 30th to 14th to 6th in EPA per dropback** over three seasons, and is 3rd in completion
+  percentage over expected. Only Joe Burrow beats him on both (B1, B2). His sack rate went 9.9%, 3.8%, 6.2% (B7).
+- **Ben Johnson fixed third down:** the Bears went from 31st in 2024 to 8th in his first season, and are 5th now (B8).
+  The defense is the mirror image: 1st in third-down stops, 29th in yards per play allowed (B9).
 - **Touchdown luck doesn't carry over; opportunity does.** Scoring more than expected in Weeks 1-8 says almost nothing
   about Weeks 9-18 (r = 0.04); expected touchdowns do (r = 0.44). 1,159 player-seasons (P2).
 - **Three weeks explain only 18%** of how a team plays the rest of the season (r = 0.42, 256 team-seasons) (P3).
-- **The new kickoff gave every offense about 5 free yards:** drives start at the 30 instead of the 25, and 59-60% cross
-  midfield instead of 53% (P1, 22,043 drives).
-- **2026 movers:** the Giants went from 29th to 5th in net EPA per play and the Buccaneers from 26th to 3rd; the 49ers
-  fell from 1st to 22nd and the Ravens from 7th to 32nd (T4).
+- **The new kickoff gave every offense about 5 free yards:** drives start at the 30 instead of the 25, and 58-60% cross
+  midfield instead of 53% (P1, 22,198 drives).
+- **2026 movers:** from Weeks 1-3 to Weeks 7-9, the Packers went from 31st to 6th in net EPA per play, the Giants from
+  29th to 5th and the Buccaneers from 26th to 3rd; the Ravens fell from 7th to 31st and the Raiders from 4th to 28th (T4).
 
 ## Charts
 
@@ -30,12 +30,12 @@ Data through 2026 Week 8. Rebuild everything with one command (`scripts/build_al
 
 | # | Finding |
 |---|---|
-| B1 | 30th (2024) to 14th (2025) to 3rd (2026) in EPA per dropback |
-| B2 | No current starter is both more efficient and more accurate (circle headshots) |
+| B1 | 30th (2024) to 14th (2025) to 6th (2026) in EPA per dropback |
+| B2 | Only Joe Burrow is both more efficient and more accurate (circle headshots) |
 | B3 | He keeps every receiver involved; Rome Odunze turns targets into the most EPA |
 | B4 | He beats expected completion at every depth of throw |
 | B5 | D'Andre Swift gets the carries; Kyle Monangai does more with them |
-| B6 | Every 2026 game with the starting quarterback: 4-1 with Caleb |
+| B6 | Every 2026 game with the starting quarterback: 5-1 with Caleb |
 | B7 | Sack rate by season |
 | B8 | Third downs by head coach, 2018-2026 |
 | B9 | Defensive rank on six measures |
@@ -44,7 +44,7 @@ Data through 2026 Week 8. Rebuild everything with one command (`scripts/build_al
 
 | # | Finding |
 |---|---|
-| T1 | First four weeks vs the next four: the 8 biggest risers and fallers |
+| T1 | The first half of the season so far vs the second: the 8 biggest risers and fallers |
 | T2 | Today's best 8 and worst 8, and how each got there on offense and defense |
 | T3 | Every team's season, game by game, with a three-game rolling line |
 | T4 | Rank in three stretches of the season, one panel per team |
@@ -56,7 +56,7 @@ aggressiveness, target share vs air-yards share, 1st-quarter targets, QB throw-d
 the NFC North trend, the comeback of the season, play action (FTN charting), rushing yards over expected (Next Gen Stats), a
 gt QB board with sparklines, and points by quarter.
 
-![No current starter is both more efficient and more accurate than Caleb Williams](out/B2_caleb_vs_starting_qbs.png)
+![Only Joe Burrow is both more efficient and more accurate than Caleb Williams](out/B2_caleb_vs_starting_qbs.png)
 
 ![Rank movement in three stretches of the season](out/T4_rank_bump_chart.png)
 
@@ -139,8 +139,8 @@ fonts/              Roboto, SIL OFL 1.1
 
 ## Limits
 
-- Net EPA per play is not adjusted for opponents. 2026 samples are small: Caleb's 2026 line is 186 dropbacks in 5 starts,
-  and the Weeks 7-8 stretch in T4 is two games or fewer per team. The charts say so where it matters.
+- Net EPA per play is not adjusted for opponents. 2026 samples are small: Caleb's 2026 line is 227 dropbacks in 6 starts,
+  and each stretch in T4 is three games or fewer per team. The charts say so where it matters.
 - EPA, CPOE, expected pass rate and win probability are nflfastR model outputs; expected touchdowns are nflverse's
   ff_opportunity model; rushing yards over expected are Next Gen Stats.
 - nflverse credits all of the 2024 Bears season to Matt Eberflus; Thomas Brown coached the last five games as interim.

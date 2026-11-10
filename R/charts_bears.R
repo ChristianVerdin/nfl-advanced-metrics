@@ -38,7 +38,8 @@ chart_caleb_leap <- function() {
     labs(
       title = paste0("Caleb Williams went from ", ordinal(r$rank[1]), " to ", ordinal(r$rank[2]), " to ",
                      ordinal(r$rank[3]), " in EPA per dropback"),
-      subtitle = paste0("Gray dots: every qualifying QB each season. The 2026 sample is ", r$db[3], " dropbacks in 5 starts"),
+      subtitle = paste0("Gray dots: every qualifying QB each season. The 2026 sample is ", r$db[3], " dropbacks in ",
+                        length(caleb_games(data_rds("pbp"))), " starts"),
       x = NULL, y = NULL,
       caption = caption(span = paste0("2024-2025 and 2026 ", wk_span(1, LASTW)), credit = HEADS)) +
     theme_nfl() + theme(strip.text = element_text(size = 13, hjust = 0), panel.grid.major.x = element_blank())
@@ -205,7 +206,7 @@ chart_bears_games <- function() {
     geom_hline(yintercept = 0, color = INK, linewidth = 0.4) +
     geom_col(aes(fill = caleb), width = 0.62) +
     geom_nfl_logos(aes(y = ifelse(epa >= 0, epa + 0.06, epa - 0.06), team_abbr = opp), width = 0.055) +
-    geom_text(aes(y = ifelse(epa >= 0, epa + 0.135, epa - 0.135), label = res), family = "RobotoNFL", fontface = "bold", size = 3.6) +
+    geom_text(aes(y = ifelse(epa >= 0, epa + 0.165, epa - 0.165), label = res), family = "RobotoNFL", fontface = "bold", size = 3.6) +
     scale_fill_manual(values = c(`TRUE` = ORANGE, `FALSE` = GRAY)) +
     scale_x_continuous(breaks = g1$week, labels = paste0("Wk ", g1$week, "\n", g1$where, " ", g1$opp, "\n", last_name(g1$qb))) +
     scale_y_continuous(labels = function(v) signed(v), breaks = pretty_breaks(6),

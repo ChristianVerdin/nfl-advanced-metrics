@@ -50,7 +50,8 @@ chart_team_tiers <- function() {
     group_by(tier_no) |> mutate(tier_rank = row_number()) |> ungroup()
   g <- nfl_team_tiers(
     d |> transmute(tier_no, team_abbr = team, tier_rank),
-    title = "2026 team tiers after eight weeks",
+    title = paste0("2026 team tiers after ", c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+                   "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen")[LASTW], if (LASTW == 1) " week" else " weeks"),
     subtitle = "Net EPA per play (offense minus defense allowed), grouped with k-means",
     caption = caption(),
     tier_desc = c("1" = "Top tier", "2" = "Above average", "3" = "Average", "4" = "Below average", "5" = "Bottom tier"),

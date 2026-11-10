@@ -26,6 +26,7 @@ chart_target_share <- function(min_tgt = 40, n_heads = 12) {
     mutate(wopr = 1.5 * ts + 0.7 * ays, rank = rank(-wopr, ties.method = "first")) |>
     left_join(pl |> select(id = gsis_id, name), by = "id")
   heads <- d |> filter(rank <= n_heads) |> left_join(sprites(), by = c("id" = "gsis_id"))
+  for (i in which(is.na(heads$sprite) | !file.exists(heads$sprite))) heads$sprite[i] <- ensure_sprite(heads$id[i], heads$team[i])$sprite   # a top-12 player outside the headshot groups
   W <- 0.07
   heads <- cbind(heads, spread_xy(heads$ts, heads$ays, rep(W, nrow(heads)), range(d$ts), range(d$ays), aspect = 13 / 8.2))
   lead <- d |> slice_min(rank, n = 1)

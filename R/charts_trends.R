@@ -36,7 +36,7 @@ chart_trend_dumbbell <- function(k = 8) {
     scale_color_manual(values = c(up = "#1a7f4b", down = "#c0392b")) +
     scale_x_continuous(labels = function(v) signed(v), breaks = pretty_breaks(7), expand = expansion(mult = c(0.04, 0.1))) +
     labs(
-      title = paste0("The ", nick(up$team), " improved the most from the first four weeks to the next four (", signed(up$chg),
+      title = paste0("The ", nick(up$team), " improved the most from ", wk_span(1, HALF), " to ", wk_span(HALF + 1, LASTW), " (", signed(up$chg),
                      "); the ", nick(dn$team), " fell the furthest (", signed(dn$chg), ")"),
       subtitle = paste0("Net EPA per play, ", wk_span(1, HALF), " (dot) to ", wk_span(HALF + 1, LASTW), " (arrow): the ", k, " ", kw("biggest risers", GREEN), " and ", kw("fallers", RED)),
       x = "Net EPA per play", y = NULL, caption = caption(paste0("Net EPA = offense minus defense allowed, not opponent-adjusted. All 32: ", n_up, " improved, ", 32 - n_up, " declined"))) +
@@ -61,7 +61,8 @@ chart_trend_arrows <- function(k = 8) {
     scale_x_continuous(labels = function(v) signed(v), breaks = pretty_breaks(4), expand = expansion(mult = 0.15)) +
     scale_y_reverse(labels = function(v) signed(v), breaks = pretty_breaks(4), expand = expansion(mult = 0.15)) +
     labs(
-      title = paste0(length(rose$team), " of today's top ", k, " climbed there after Week ", HALF, "; ", length(fell$team), " of the bottom ", k, " fell there"),
+      title = paste0(if (length(rose$team) == k) "All" else length(rose$team), " of today's top ", k, " climbed there after Week ", HALF, "; ",
+                     if (length(fell$team) == k) "all" else length(fell$team), " of the bottom ", k, " fell there"),
       subtitle = paste0("Offense vs defense EPA per play: ", wk_span(1, HALF), " (dot) to ", wk_span(HALF + 1, LASTW), " (logo), ", kw("improved", GREEN), " or ",
                         kw("declined", RED), ". Up and right is better"),
       x = "Offense: EPA per play", y = "Defense: EPA allowed per play",
@@ -128,7 +129,8 @@ chart_trend_bump <- function(k = 4) {
       title = paste0(and_list(nick(risers$team)), " climbed; ", and_list(nick(fallers$team)), " fell"),
       subtitle = paste0("Net EPA per play rank in three stretches of the season (1st = best): the ", k, " ", kw("biggest risers", GREEN),
                         " and ", kw("biggest fallers", RED)),
-      x = NULL, y = "Rank", caption = caption(paste0("Shaded: top 8 and bottom 8. ", labs3[3], " is the shortest stretch"))
+      x = NULL, y = "Rank", caption = caption(paste0("Shaded: top 8 and bottom 8",
+                       if (LASTW - B3[2] < B3[2] - B3[1]) paste0(". ", labs3[3], " is the shortest stretch") else ""))
     ) +
     theme_nfl_axis(strip.text = element_nfl_logo(size = 1.1), panel.grid.major.x = element_blank(),
                    axis.text.x = element_text(size = 9.5, color = "#555555"), panel.spacing.x = unit(14, "pt"))

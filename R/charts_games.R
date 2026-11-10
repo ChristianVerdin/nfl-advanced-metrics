@@ -42,13 +42,16 @@ chart_division_weekly <- function(division = "NFC North") {
   dark <- function(hex) { v <- col2rgb(hex); sum(v * c(0.299, 0.587, 0.114)) < 60 }
   cols <- div |> mutate(col = ifelse(vapply(team_color, dark, logical(1)), team_color2, team_color))
   cols <- setNames(cols$col, cols$team_abbr)
-  last_pt <- wk |> filter(!is.na(epa)) |> group_by(team) |> slice_max(week, n = 1) |> ungroup()
+  last_pt <- wk |> filter(!is.na(epa)) |> group_by(team) |> slice_max(week, n = 1) |> ungroup() |> arrange(epa) |> mutate(ly = epa)
+  gap <- diff(range(wk$epa, na.rm = TRUE)) * 0.11   # end logos at least a logo's height apart, in rank order
+  for (i in seq_len(nrow(last_pt))[-1]) last_pt$ly[i] <- max(last_pt$ly[i], last_pt$ly[i - 1] + gap)
   g <- ggplot(wk, aes(week, epa, color = team, group = team)) +
     geom_hline(yintercept = 0, color = INK, linewidth = 0.4) +
     geom_line(linewidth = 1.6, na.rm = TRUE) +
     geom_point(size = 4.2, color = BG, na.rm = TRUE) +
     geom_point(size = 2.6, na.rm = TRUE) +
-    geom_nfl_logos(data = last_pt, mapping = aes(x = week + 0.38, y = epa, team_abbr = team), width = 0.05,
+    geom_segment(data = last_pt, aes(x = week + 0.08, xend = week + 0.2, y = epa, yend = ly), linewidth = 0.5) +
+    geom_nfl_logos(data = last_pt, mapping = aes(x = week + 0.42, y = ly, team_abbr = team), width = 0.05,
                    inherit.aes = FALSE) +
     scale_color_manual(values = cols) +
     scale_x_continuous(breaks = WEEKS, labels = paste("Wk", WEEKS), limits = c(min(WEEKS) - 0.2, max(WEEKS) + 0.6)) +
