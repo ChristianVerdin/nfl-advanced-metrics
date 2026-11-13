@@ -18,7 +18,9 @@ suppressPackageStartupMessages({
 
 ROOT <- normalizePath(".")
 DATA <- file.path(ROOT, "data")
-OUT <- file.path(ROOT, "out")
+# NFL_VIZ_THEME=dark renders every chart on a dark background into out_dark/ (the default light set stays in out/)
+DARK <- identical(Sys.getenv("NFL_VIZ_THEME"), "dark")
+OUT <- file.path(ROOT, if (DARK) "out_dark" else "out")
 dir.create(DATA, showWarnings = FALSE)
 dir.create(OUT, showWarnings = FALSE)
 
@@ -46,9 +48,11 @@ register_font(
 )
 register_font(name = "RobotoNFLBlack", plain = file.path(font_dir, "Roboto-Black.ttf"))
 
-BG <- "#f7f7f7"
-INK <- "#1b1b1b"
-MUTED <- "#5c5c5c"
+BG <- if (DARK) "#14171a" else "#f7f7f7"
+INK <- if (DARK) "#ececea" else "#1b1b1b"
+MUTED <- if (DARK) "#a4a9b0" else "#5c5c5c"
+GRID <- if (DARK) "#2c3136" else "#dedede"
+AXIS_TEXT <- if (DARK) "#c4c8cc" else "#333333"
 
 # Deliberately NOT a complete theme (no theme_minimal()/theme_grey() call): nflplotR/ggpath axis images
 # (element_nfl_logo, element_nfl_headshot) are dropped when the plot carries a complete theme under
@@ -61,10 +65,10 @@ theme_nfl <- function(base_size = 13) {
     panel.background = element_rect(fill = BG, color = NA),
     panel.border = element_blank(),
     panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(color = "#dedede", linewidth = 0.35),
+    panel.grid.major = element_line(color = GRID, linewidth = 0.35),
     axis.ticks = element_blank(),
     axis.title = element_text(face = "bold", size = rel(0.95)),
-    axis.text = element_text(color = "#333333", size = rel(0.9)),
+    axis.text = element_text(color = AXIS_TEXT, size = rel(0.9)),
     plot.title.position = "plot",
     plot.caption.position = "plot",
     plot.title = element_text(family = "RobotoNFLBlack", size = rel(1.75), hjust = 0, margin = margin(b = 4)),
@@ -75,7 +79,7 @@ theme_nfl <- function(base_size = 13) {
     legend.background = element_rect(fill = BG, color = NA),
     legend.key = element_blank(),
     strip.background = element_blank(),
-    strip.text = element_text(face = "bold")
+    strip.text = element_text(face = "bold", color = INK)
   )
 }
 
@@ -89,7 +93,27 @@ caption <- function(note = NULL, span = SPAN, credit = LOGOS) {
   paste(c(note, paste0("Data: nflverse via nflreadr, ", span), credit), collapse = "   \u00b7   ")
 }
 
-GREEN <- "#1a7f4b"; RED <- "#c0392b"; ORANGE <- "#E64100"; NAVY <- "#0B162A"; GRAY <- "#8a96a3"
+GREEN <- if (DARK) "#3fbf7f" else "#1a7f4b"; RED <- if (DARK) "#ee6352" else "#c0392b"
+ORANGE <- if (DARK) "#ff6a2b" else "#E64100"; NAVY <- "#0B162A"; GRAY <- "#8a96a3"
+# diverging pair and its neutral midpoint (charts 17, 18, 24, 31)
+BLUE <- if (DARK) "#4f97e0" else "#2166ac"; WARM <- if (DARK) "#e5773f" else "#c4501b"; MID <- if (DARK) "#2a2f35" else "#ececec"
+# a team colour that stays visible on the background: on dark, a near-black primary gives way to the secondary
+on_bg <- function(col, alt = NA) {
+  if (!DARK) return(col)
+  l <- function(h) vapply(h, function(x) if (is.na(x)) 0 else sum(col2rgb(x) * c(0.299, 0.587, 0.114)), numeric(1))
+  ifelse(l(col) >= 50, col, ifelse(l(alt) >= 50, alt, "#9aa3ad"))
+}
+# On dark, a one-colour navy logo disappears: redraw it as a lighter silhouette on top of itself.
+if (DARK) {
+  DARK_LOGOS <- c(NYG = "#7da2f2")
+  geom_nfl_logos <- function(mapping = NULL, data = NULL, ...) {
+    only <- function(d) d[rlang::eval_tidy(mapping$team_abbr, d) %in% names(DARK_LOGOS), , drop = FALSE]
+    top <- list(...); top$alpha <- NULL   # ggpath ignores colour when alpha is set
+    list(nflplotR::geom_nfl_logos(mapping = mapping, data = data, ...),
+         do.call(nflplotR::geom_nfl_logos, c(list(mapping = mapping, data = if (is.null(data)) only else only(data),
+                                                  colour = DARK_LOGOS[[1]]), top)))
+  }
+}
 # a coloured, bold word for subtitles: the subtitle doubles as the legend
 kw <- function(text, col) sprintf("<b style='color:%s'>%s</b>", col, text)
 
