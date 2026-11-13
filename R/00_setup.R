@@ -24,6 +24,25 @@ OUT <- file.path(ROOT, if (DARK) "out_dark" else "out")
 dir.create(DATA, showWarnings = FALSE)
 dir.create(OUT, showWarnings = FALSE)
 
+# Columns no chart uses can be listed (HIDE_COLS) in an optional, untracked R/local_guard.R. They are dropped
+# whenever a table is saved to or read from data/, and check_clean() stops a data script if any are left.
+HIDE_COLS <- character()
+if (file.exists(file.path(ROOT, "R", "local_guard.R"))) source(file.path(ROOT, "R", "local_guard.R"))
+clean_cols <- function(d) {
+  if (!is.data.frame(d) || !length(HIDE_COLS)) return(d)
+  d[, setdiff(names(d), HIDE_COLS), drop = FALSE]
+}
+save_rds <- function(d, name) saveRDS(clean_cols(d), file.path(DATA, paste0(name, ".rds")))
+check_clean <- function() {
+  if (!length(HIDE_COLS)) return(invisible(TRUE))
+  for (f in list.files(DATA, pattern = "[.]rds$", full.names = TRUE)) {
+    d <- readRDS(f)
+    if (is.data.frame(d) && any(names(d) %in% HIDE_COLS)) stop("hidden columns left in ", basename(f))
+  }
+  message("check_clean: no hidden columns in data/")
+  invisible(TRUE)
+}
+
 SEASON <- 2026
 # Weeks covered = the snapshot's (R/01_data.R picks the last week whose games are all final); 1:8 before any pull
 .snap <- file.path(DATA, "SNAPSHOT.csv")
@@ -151,7 +170,7 @@ players <- function() {
     transmute(gsis_id, name = display_name, short = coalesce(short_name, display_name), position)
 }
 
-data_rds <- function(name) readRDS(file.path(DATA, paste0(name, ".rds")))
+data_rds <- function(name) clean_cols(readRDS(file.path(DATA, paste0(name, ".rds"))))
 plays_epa <- function(pbp) pbp |> filter(!is.na(epa), !is.na(posteam), pass == 1 | rush == 1)
 
 last_name <- function(x) sub("^\\S+\\s+", "", x)

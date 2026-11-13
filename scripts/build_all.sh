@@ -12,6 +12,7 @@ if [ "${1:-}" != "--charts" ]; then
   $RS R/01_data.R
   $RS R/01b_history.R
   $RS R/01c_extra.R
+  $RS R/01d_weekly.R
   $RS R/02_headshots.R
 fi
 $RS R/run_all.R 2>&1 | tee /tmp/nfl_viz_build.log | grep -E "wrote|FAILED|TOO LONG|shrunk"

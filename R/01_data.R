@@ -18,13 +18,12 @@ final_check <- load_schedules(SEASON) |>
   summarise(scheduled = n(), final = sum(!is.na(result)))
 stopifnot(final_check$scheduled == final_check$final, nrow(games) == final_check$final)
 
-saveRDS(pbp, file.path(DATA, "pbp.rds"))
-saveRDS(load_schedules(SEASON) |> filter(game_type == "REG", week %in% WEEKS), file.path(DATA, "schedules.rds"))
-saveRDS(teams(), file.path(DATA, "teams.rds"))
-saveRDS(players(), file.path(DATA, "players.rds"))
-saveRDS(load_nextgen_stats(SEASON, stat_type = "rushing") |> filter(season_type == "REG", week %in% WEEKS),
-        file.path(DATA, "ngs_rushing.rds"))
-saveRDS(load_ftn_charting(SEASON) |> filter(week %in% WEEKS), file.path(DATA, "ftn.rds"))
+save_rds(pbp, "pbp")
+save_rds(load_schedules(SEASON) |> filter(game_type == "REG", week %in% WEEKS), "schedules")
+save_rds(teams(), "teams")
+save_rds(players(), "players")
+save_rds(load_nextgen_stats(SEASON, stat_type = "rushing") |> filter(season_type == "REG", week %in% WEEKS), "ngs_rushing")
+save_rds(load_ftn_charting(SEASON) |> filter(week %in% WEEKS), "ftn")
 
 stamp <- data.frame(
   pulled_at = format(Sys.time(), "%Y-%m-%d %H:%M %Z"),
@@ -34,3 +33,5 @@ stamp <- data.frame(
 )
 write.csv(stamp, file.path(DATA, "SNAPSHOT.csv"), row.names = FALSE)
 print(stamp)
+
+check_clean()

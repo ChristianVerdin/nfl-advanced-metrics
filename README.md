@@ -1,12 +1,14 @@
 # NFL advanced metrics, visualized
 
-Forty-eight charts and one animation of the 2026 NFL season and of patterns across 2018-2025, built in R from nflverse data. Each one is
+Fifty-nine charts and one animation of the 2026 NFL season, a week-by-week set rebuilt every Tuesday, and patterns across
+2018-2025, built in R from nflverse data. Each one is
 meant to be read in five seconds: the title states the finding, a one-line subtitle says what is measured, and team logos
 or player headshots replace legends. Titles are computed from the data, so a rerun after next week keeps them true. The
 style follows Bradley Congelio's *Introduction to NFL Analytics with R* (chapter 4), rebuilt on the current nflverse and
 ggplot2 4 APIs.
 
-Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_all.sh`).
+Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_all.sh`), or only the week-by-week charts
+(`scripts/build_week.sh`).
 
 ![Caleb Williams went from 30th to 14th to 6th in EPA per dropback](out/B1_caleb_williams_leap.png)
 
@@ -31,6 +33,12 @@ Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_al
   9 interceptions on 8 (26). Caleb Williams holds the ball longest of any regular starter, 3.19 seconds a throw (25).
 - **2026 movers:** from Weeks 1-3 to Weeks 7-9, the Packers went from 31st to 6th in net EPA per play, the Giants from
   29th to 5th and the Buccaneers from 26th to 3rd; the Ravens fell from 7th to 31st and the Raiders from 4th to 28th (T4).
+- **Who controls games:** the 49ers have led for 69% of their game time and the Chargers for 13% (W3). 16 of 135 decided
+  games went to the team that moved the ball worse, close to the 2018-25 rate of 11.4% (W1).
+- **Injuries drive role changes:** 10 of the 12 biggest snap-share risers are filling in for a teammate who is out or gone
+  (W5), and the Eagles have been missing a starter 30 times since Week 2 (W6).
+- **Wind takes the deep ball away:** at 16+ mph a throw 20+ yards downfield is worth 0.16 EPA, 64% less than in calm air,
+  yet teams throw deep just as often (P4, 2018-2026).
 
 ## Charts
 
@@ -47,6 +55,21 @@ Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_al
 | B7 | Sack rate by season |
 | B8 | Third downs by head coach, 2018-2026 |
 | B9 | Defensive rank on six measures |
+
+**Week by week (W1-W10, rebuilt every Tuesday; the title carries the week)**
+
+| # | Finding |
+|---|---|
+| W1 | Every game by its winner: did the team that moved the ball better win? |
+| W2 | The 10 plays that swung win probability most, with the player who made each one |
+| W3 | Share of game time each team has led, tied and trailed, game by game |
+| W4 | Next week's games: each offense's rank against the rank of the defense it faces |
+| W5 | The biggest snap-share risers, and whether they are filling in for a teammate |
+| W6 | Starters who did not play, by week and by reason |
+| W7 | Division races: games over .500 after each week |
+| W8 | Each team's quarterback this week against his own season |
+| W9 | What each defense allows to wide receivers, tight ends and running backs |
+| W10 | Penalty yards per game, before the snap and during the play |
 
 **How teams have trended in 2026**
 
@@ -79,7 +102,8 @@ Data through 2026 Week 9. Rebuild everything with one command (`scripts/build_al
 | 31 | Every team's rank on six offensive and six defensive measures |
 | 32 | The EPA landscape after each week, animated |
 
-**League patterns:** P1 kickoff rule, P2 touchdown regression, P2b 2026 touchdown outliers, P3 early weeks vs the rest.
+**League patterns:** P1 kickoff rule, P2 touchdown regression, P2b 2026 touchdown outliers, P3 early weeks vs the rest,
+P4 wind and passing.
 
 **The 2026 season (01-15):** team EPA landscape, tiers, early-down pass rate over expected, the QB landscape, third-down
 aggressiveness, target share vs air-yards share, 1st-quarter targets, QB throw-depth ridgelines, big-play touchdown drives,
@@ -87,6 +111,8 @@ the NFC North trend, the comeback of the season, play action (FTN charting), rus
 gt QB board with sparklines, and points by quarter.
 
 ![Only Joe Burrow is both more efficient and more accurate than Caleb Williams](out/B2_caleb_vs_starting_qbs.png)
+
+![Did the team that moved the ball better win? Every 2026 game by its winner](out/W1_week_in_one_picture.png)
 
 ![Every remaining game, shaded by opponent strength](out/18_remaining_schedule.png)
 
@@ -105,7 +131,11 @@ All charts: [`out/`](out/).
 - **One frozen snapshot per run.** `R/01_data.R` pulls 2026 play-by-play, schedules, rosters, Next Gen Stats and FTN
   charting, and stops if any scheduled game isn't final. `R/01b_history.R` adds 2018-2025 play-by-play (slim columns),
   nflverse expected-touchdown data, snap counts and schedules. `R/01c_extra.R` adds Next Gen Stats passing and receiving,
-  Pro Football Reference advanced stats, weekly player stats and draft results. Charts read only `data/`, so they rebuild offline.
+  Pro Football Reference advanced stats, weekly player stats and draft results. `R/01d_weekly.R` adds official injury
+  reports and weekly roster status. Charts read only `data/`, so they rebuild offline.
+- **A weekly set with fixed file names.** The W charts keep the same file names every week and put the week in the
+  computed title, so links to them stay current. `scripts/build_week.sh` pulls the new week and redraws them in both
+  themes. Charts that can come out empty (no games left, too few weeks) skip with a message instead of failing.
 - **Headshots, the book's section 4.15 method on current packages** (`R/lib_headshots.R`): NFL.com photos via nflverse,
   a face-centred square crop first (a plain centre crop keeps the chest and clips the hair), `cropcircles` with a ring in
   the team color, and the last name arced over the top with `geomtextpath`. 136 players in seven groups (starting QBs, top
@@ -152,8 +182,10 @@ All charts: [`out/`](out/).
 ```bash
 scripts/build_all.sh                        # data pull, history, headshots, every chart, the gt board screenshot
 scripts/build_all.sh --charts               # charts only, from the saved snapshot
+scripts/build_week.sh [--charts]            # the week-by-week W charts and P4, light and dark
 Rscript R/run_all.R caleb_leap trend_bump   # named charts only (chart_<name> functions in R/charts_*.R)
-NFL_VIZ_THEME=dark Rscript R/run_all.R pythagorean   # dark-background version, written to out_dark/ (charts 16-32)
+Rscript R/run_all.R weekly                  # every W chart
+NFL_VIZ_THEME=dark Rscript R/run_all.R pythagorean   # dark-background version, written to out_dark/ (16-32, W1-W10, P4)
 ```
 
 One-time setup:
@@ -172,15 +204,16 @@ environment or an untracked `scripts/local.env`) to point at other installs.
 R/00_setup.R        theme, fonts, caption, save_chart(), spread_xy(), shared helpers
 R/01_data.R         2026 snapshot (asserts every game is final)
 R/01b_history.R     2018-2025 play-by-play, expected touchdowns, snap counts, schedules
-R/01c_extra.R      Next Gen Stats passing/receiving, PFR advanced stats, player stats, draft results
+R/01c_extra.R       Next Gen Stats passing/receiving, PFR advanced stats, player stats, draft results
+R/01d_weekly.R      injury reports, weekly roster status, player ids
 R/02_headshots.R    headshot groups -> assets/headshots/manifest.csv + contact sheets
 R/lib_headshots.R   crop, ring, name arc; ensure_sprite() for any player
 R/charts_*.R        one chart_<name>() per chart: teams, qbs, players, games, bears, patterns, trends, table,
-                    luck, situations, defense, tracking, league
-R/run_all.R         runs every chart_*() (or the ones named)
-scripts/            build_all.sh, shoot.py (gt -> PNG)
+                    luck, situations, defense, tracking, league, weekly (W1-W4, W6, W8), weekly2 (W5, W7, W9, W10)
+R/run_all.R         runs every chart_*() (or the ones named, or "weekly")
+scripts/            build_all.sh, build_week.sh, shoot.py (gt -> PNG)
 out/                charts (PNG), the gt board (HTML) and the animation (GIF)
-out_dark/           charts 16-32 on a dark background
+out_dark/           charts 16-32, W1-W10 and P4 on a dark background
 fonts/              Roboto, SIL OFL 1.1
 ```
 
@@ -192,11 +225,14 @@ fonts/              Roboto, SIL OFL 1.1
 - EPA, CPOE, expected pass rate and win probability are nflfastR model outputs; expected touchdowns are nflverse's
   ff_opportunity model; rushing yards over expected are Next Gen Stats.
 - nflverse credits all of the 2024 Bears season to Matt Eberflus; Thomas Brown coached the last five games as interim.
+- W5 and W6 use snap counts (route data is not public for 2026). W6's starters come from each team's previous three
+  games, so Week 1 has none. W4 ranks are season-to-date and say nothing about who will win. P4 uses the listed wind at
+  kickoff; 2026 games from Week 5 on have none listed yet.
 
 ## Data and credits
 
 Play-by-play and models: nflverse (nflfastR) via nflreadr. Play-action, motion and interception-worthy charting: FTN Data via nflverse (CC BY-SA 4.0).
 Rushing yards over expected, time to throw and separation: NFL Next Gen Stats via nflverse. Pressures, blitzes, snap
-counts and draft results: Pro Football Reference via nflverse. Team logos and player photos via nflplotR and NFL.com; they
+counts and draft results: Pro Football Reference via nflverse. Injury reports and weekly roster status: NFL via nflverse. Team logos and player photos via nflplotR and NFL.com; they
 are the trademarks and images of the NFL, its teams and players, used for commentary and analysis. Chart style after
 Bradley J. Congelio, *Introduction to NFL Analytics with R* (CC0). Code: MIT ([LICENSE](LICENSE)).

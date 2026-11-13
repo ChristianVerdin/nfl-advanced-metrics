@@ -10,3 +10,4 @@ social/
 scripts/local.env
 CLAUDE.md
 CONTEXT.md
+R/local_guard.R

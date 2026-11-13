@@ -4,9 +4,9 @@
 chart_league_trends <- function() {
   cols <- c("season", "season_type", "week", "play_type", "pass", "rush", "qb_dropback", "pass_attempt", "sack", "air_yards",
             "down", "yards_gained", "epa", "posteam")
-  p <- bind_rows(readRDS(file.path(DATA, "pbp_2018_2025.rds"))[, cols], data_rds("pbp")[, cols]) |>
+  p <- bind_rows(data_rds("pbp_2018_2025")[, cols], data_rds("pbp")[, cols]) |>
     filter(season_type == "REG", week <= LASTW)
-  sc <- readRDS(file.path(DATA, "schedules_all.rds")) |> filter(game_type == "REG", week <= LASTW, !is.na(result)) |>
+  sc <- data_rds("schedules_all") |> filter(game_type == "REG", week <= LASTW, !is.na(result)) |>
     group_by(season) |> summarise(v = mean((home_score + away_score) / 2), .groups = "drop")
   sm <- function(d, name) d |> transmute(season, v, metric = name)
   sn <- p |> filter(pass == 1 | rush == 1, !is.na(epa), !is.na(posteam))

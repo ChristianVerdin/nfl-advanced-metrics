@@ -54,7 +54,7 @@ team_offense <- function(abbr = "CHI", label = "Bears offense") {
 }
 
 td_outliers <- function(n = 8) {
-  readRDS(file.path(DATA, "ff_opportunity.rds")) |> filter(season == SEASON, week %in% WEEKS, position != "QB") |>
+  data_rds("ff_opportunity") |> filter(season == SEASON, week %in% WEEKS, position != "QB") |>
     group_by(gsis_id = player_id) |>
     summarise(team = last(posteam), td = sum(coalesce(rec_touchdown, 0) + coalesce(rush_touchdown, 0)),
               xtd = sum(coalesce(rec_touchdown_exp, 0) + coalesce(rush_touchdown_exp, 0)), .groups = "drop") |>

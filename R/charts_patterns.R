@@ -146,3 +146,47 @@ chart_early_weeks <- function() {
     theme_nfl()
   save_chart(g, "P3_early_weeks_vs_rest", w = 12.5, h = 8)
 }
+
+# P4: passing by wind, outdoor games 2018-2026, against indoor games. Wind is the listed game-time wind; 2026 games
+# from Week 5 on have none listed yet and drop out.
+chart_wind_passing <- function() {
+  cols <- c("game_id", "season", "season_type", "qb_dropback", "pass_attempt", "sack", "air_yards", "epa")
+  p <- bind_rows(data_rds("pbp_2018_2025")[, cols], data_rds("pbp")[, cols]) |>
+    filter(season_type == "REG", qb_dropback == 1, !is.na(epa))
+  levs <- c("Indoors", "0-5 mph", "6-10 mph", "11-15 mph", "16+ mph")
+  d <- p |> left_join(data_rds("schedules_all") |> select(game_id, roof, wind), by = "game_id") |>
+    mutate(bucket = case_when(
+      roof %in% c("dome", "closed") ~ "Indoors",
+      roof %in% c("outdoors", "open") & !is.na(wind) ~ as.character(cut(wind, c(-Inf, 5, 10, 15, Inf), labels = levs[-1])),
+      TRUE ~ NA_character_)) |>
+    filter(!is.na(bucket)) |> mutate(bucket = factor(bucket, levs))
+  s <- d |> group_by(bucket) |>
+    summarise(games = n_distinct(game_id),
+              share = mean(air_yards[pass_attempt == 1 & sack == 0 & !is.na(air_yards)] >= 20),
+              deep = mean(epa[pass_attempt == 1 & sack == 0 & !is.na(air_yards) & air_yards >= 20]),
+              epa = mean(epa), .groups = "drop")
+  calm <- s |> filter(bucket == "0-5 mph"); gust <- s |> filter(bucket == "16+ mph")
+  title <- paste0("In 16+ mph wind, a throw 20+ yards downfield is worth ", number(gust$deep, 0.01), " EPA, ",
+                  pct(1 - gust$deep / calm$deep), " less than in calm air (", number(calm$deep, 0.01), ")")
+  m <- s |> pivot_longer(c(epa, deep), names_to = "measure") |>
+    mutate(measure = factor(measure, c("epa", "deep"), c("EPA per dropback, all", "EPA per throw 20+ yards downfield")),
+           lab = signed(value))
+  ramp <- if (DARK) c("#6b7480", "#9cc3e6", "#6aa6dc", "#3f86cc", "#1f66b0") else c("#9aa3ad", "#b7d3ec", "#7fb0dc", "#3f86c4", "#1b5a9a")
+  g <- ggplot(m, aes(bucket, value, fill = bucket)) +
+    geom_col(width = 0.68) +
+    geom_text(aes(label = lab, vjust = ifelse(value >= 0, -0.5, 1.4)), size = 3.6, family = "RobotoNFL", fontface = "bold",
+              color = INK) +
+    geom_hline(yintercept = 0, color = MUTED, linewidth = 0.4) +
+    facet_wrap(~measure, scales = "free_y") +
+    scale_fill_manual(values = setNames(ramp, levs)) +
+    scale_x_discrete(labels = paste0(levs, "\n", number(s$games, big.mark = ","), " games")) +
+    scale_y_continuous(expand = expansion(mult = c(0.12, 0.15)), labels = NULL) +
+    labs(title = title,
+         subtitle = paste0("Listed wind at kickoff, outdoor and open-roof games, against <b>indoor</b> games. Deep throws stay ",
+                           pct(min(s$share)), "-", pct(max(s$share)), " of throws in every wind"),
+         x = NULL, y = NULL,
+         caption = caption(paste0(SEASON, " games from Week 5 on have no listed wind yet and are left out"),
+                           span = paste0("2018-", SEASON, " regular seasons"), credit = NULL)) +
+    theme_nfl_axis(panel.grid.major = element_blank(), strip.text = element_text(face = "bold", size = rel(1.1)))
+  save_chart(g, "P4_wind_and_passing", w = 12, h = 6.75)
+}

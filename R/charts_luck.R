@@ -86,7 +86,7 @@ chart_opponent_adjusted <- function() {
 chart_remaining_schedule <- function() {
   tm <- data_rds("teams")
   r <- adjusted_epa() |> select(opp = team, rating = net_adj)
-  s <- readRDS(file.path(DATA, "schedules_all.rds")) |> filter(season == SEASON, game_type == "REG", week > LASTW)
+  s <- data_rds("schedules_all") |> filter(season == SEASON, game_type == "REG", week > LASTW)
   d <- bind_rows(s |> transmute(week, team = home_team, opp = away_team, away = FALSE),
                  s |> transmute(week, team = away_team, opp = home_team, away = TRUE)) |>
     left_join(r, by = "opp")
