@@ -153,6 +153,7 @@ All charts: [`out/`](out/).
 scripts/build_all.sh                        # data pull, history, headshots, every chart, the gt board screenshot
 scripts/build_all.sh --charts               # charts only, from the saved snapshot
 Rscript R/run_all.R caleb_leap trend_bump   # named charts only (chart_<name> functions in R/charts_*.R)
+NFL_VIZ_THEME=dark Rscript R/run_all.R pythagorean   # dark-background version, written to out_dark/ (charts 16-32)
 ```
 
 One-time setup:
@@ -179,6 +180,7 @@ R/charts_*.R        one chart_<name>() per chart: teams, qbs, players, games, be
 R/run_all.R         runs every chart_*() (or the ones named)
 scripts/            build_all.sh, shoot.py (gt -> PNG)
 out/                charts (PNG), the gt board (HTML) and the animation (GIF)
+out_dark/           charts 16-32 on a dark background
 fonts/              Roboto, SIL OFL 1.1
 ```
 
